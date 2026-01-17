@@ -56,7 +56,7 @@ class AppView:
     @staticmethod
     def render_search_input() -> str:
         """Render stock search input field"""
-        return st.text_input("", placeholder="Search Stock Name or ID...", label_visibility="collapsed")
+        return st.text_input("Stock Search", placeholder="Search Stock Name or ID...", label_visibility="collapsed")
     
     @staticmethod
     def render_metrics(current_price: float, ticker: str, last_date: str):
@@ -121,7 +121,7 @@ class AppView:
             hovermode="x unified"
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     
     @staticmethod
     def render_channel_chart(stock_data, channel_data: dict):
@@ -164,7 +164,7 @@ class AppView:
             hovermode="x unified"
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     
     @staticmethod
     def render_tabs(stock_data, five_lines_data: dict, channel_data: dict):
@@ -176,3 +176,23 @@ class AppView:
         
         with tab2:
             AppView.render_channel_chart(stock_data, channel_data)
+
+    @staticmethod
+    def render_not_found_message(search_term: str):
+        """Render a high-contrast error message when stock is not found"""
+        st.markdown(f"""
+            <div style="
+                padding: 16px;
+                background-color: #fff2f2;
+                border: 1px solid #ffcaca;
+                border-radius: 12px;
+                color: #d01b1b;
+                text-align: center;
+                margin-top: 20px;
+                font-weight: 500;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            ">
+                <p style="margin: 0; font-size: 16px;">Stock "{search_term}" not found.</p>
+                <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.8;">Please check the ticker symbol (e.g., 2330) or company name.</p>
+            </div>
+        """, unsafe_allow_html=True)

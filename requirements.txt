@@ -1,5 +1,5 @@
 streamlit
-FinMind
+yfinance
 tqdm
 plotly
 scikit-learn

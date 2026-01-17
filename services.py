@@ -3,52 +3,95 @@ Stock Analysis Services
 """
 import requests
 import pandas as pd
-from FinMind.data import DataLoader
+import yfinance as yf
 from datetime import datetime, timedelta
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from scipy.stats import norm
+import os
+import time
 
 
-class FinMindService:
-    """Responsible for FinMind API stock price fetching"""
+class YFinanceService:
+    """Responsible for yfinance stock price fetching"""
     
-    def __init__(self, token: str):
-        self.token = token
-        self.finmind = DataLoader()
-        self.finmind.login_by_token(api_token=token)
+    def __init__(self):
+        self.ticker_df = None
+        self._load_ticker_data()
+
+    def _load_ticker_data(self):
+        """Load stock ticker mapping from local CSV"""
+        csv_path = os.path.join('data', 'stock_ticker.csv')
+        if os.path.exists(csv_path):
+            try:
+                self.ticker_df = pd.read_csv(csv_path)
+                self.ticker_df['代號'] = self.ticker_df['代號'].astype(str)
+            except Exception as e:
+                print(f"Error loading ticker data: {e}")
     
-    def get_stock_id(self, stock_name: str) -> str | None:
+    def get_stock_info(self, target: str) -> dict | None:
         """
-        Convert stock name to stock ID
-        Returns stock_id directly if input is numeric
+        Lookup stock ID and market info
+        Returns: {'id': '2330', 'market': '上市'} or None
         """
-        if stock_name.isdigit():
-            return stock_name
-        
-        url = "https://api.finmindtrade.com/api/v4/data"
-        payload = {"dataset": "TaiwanStockInfo", "token": self.token}
-        try:
-            data = requests.get(url, params=payload).json()
-            for stock in data["data"]:
-                if stock["stock_name"] == stock_name:
-                    return stock["stock_id"]
-        except:
+        if self.ticker_df is None:
             return None
+            
+        # Try lookup by ID or Name
+        if target.isdigit():
+            match = self.ticker_df[self.ticker_df['代號'] == target]
+        else:
+            match = self.ticker_df[self.ticker_df['名稱'] == target]
+            
+        if not match.empty:
+            return {
+                'id': match.iloc[0]['代號'],
+                'market': match.iloc[0]['market']
+            }
         return None
     
-    def fetch_data(self, ticker: str) -> pd.DataFrame | None:
+    def fetch_data(self, ticker: str, market: str = None) -> pd.DataFrame | None:
         """
-        Fetch historical stock data from FinMind API
-        Returns last 3.5 years of daily data
+        Fetch historical stock data with smart suffix detection
         """
-        end = datetime.today().strftime('%Y-%m-%d')
         start = (datetime.today() - timedelta(days=int(3.5 * 365))).strftime('%Y-%m-%d')
-        try:
-            df = self.finmind.taiwan_stock_daily(stock_id=ticker, start_date=start, end_date=end)
-            return df if not df.empty else None
-        except:
-            return None
+        max_retries = 3
+        
+        # Determine suffix based on market
+        if market == '上市':
+            suffixes = ['.TW']
+        elif market == '上櫃':
+            suffixes = ['.TWO']
+        else:
+            # Fallback if market unknown
+            suffixes = ['.TW', '.TWO']
+            
+        for suffix in suffixes:
+            full_ticker = f"{ticker}{suffix}"
+            for attempt in range(max_retries):
+                try:
+                    # Fetching data
+                    ticker_obj = yf.Ticker(full_ticker)
+                    df = ticker_obj.history(start=start, auto_adjust=False)
+                    
+                    if not df.empty:
+                        df = df.reset_index()
+                        df.rename(columns={
+                            'Date': 'date', 'Open': 'open', 'High': 'high', 
+                            'Low': 'low', 'Close': 'close', 'Volume': 'Trading_Volume'
+                        }, inplace=True)
+                        
+                        df['date'] = df['date'].dt.strftime('%Y-%m-%d')
+                        df['stock_id'] = ticker
+                        df[['open', 'high', 'low', 'close']] = df[['open', 'high', 'low', 'close']].round(2)
+                        return df[['date', 'stock_id', 'Trading_Volume', 'open', 'high', 'low', 'close']]
+                    else:
+                        break # Try next suffix or exit
+                        
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        time.sleep(1)
+        return None
 
 
 class LohasService:
@@ -56,10 +99,6 @@ class LohasService:
     
     @staticmethod
     def prepare_data(stock_data: pd.DataFrame) -> pd.DataFrame:
-        """
-        Prepare and clean stock data
-        Converts date to datetime index and adds ordinal column for regression
-        """
         df = stock_data.copy()
         df['date'] = pd.to_datetime(df['date'])
         df.set_index('date', inplace=True)
@@ -69,10 +108,6 @@ class LohasService:
     
     @staticmethod
     def calculate_five_lines(stock_data: pd.DataFrame) -> dict:
-        """
-        Calculate 5-Lines (五線譜) analysis
-        Uses Linear Regression with standard deviation bands (±1SD, ±2SD)
-        """
         X = stock_data['Date_ordinal'].values.reshape(-1, 1)
         Y = stock_data['close'].values
         model = LinearRegression().fit(X, Y)
@@ -81,10 +116,7 @@ class LohasService:
         z69, z95 = norm.ppf((1 + 0.69) / 2), norm.ppf((1 + 0.95) / 2)
         
         return {
-            'data': stock_data,
-            'std': std_lr,
-            'z69': z69,
-            'z95': z95,
+            'data': stock_data, 'std': std_lr, 'z69': z69, 'z95': z95,
             'lines': {
                 '+2SD': stock_data['LR'] + z95 * std_lr,
                 '+1SD': stock_data['LR'] + z69 * std_lr,
@@ -96,13 +128,8 @@ class LohasService:
     
     @staticmethod
     def calculate_channel(stock_data: pd.DataFrame) -> dict:
-        """
-        Calculate LOHAS Channel (通道) analysis
-        Uses 100-day moving average with 2 standard deviation bands
-        """
         stock_data['MA100'] = stock_data['close'].rolling(window=100).mean()
         stock_data['MA100_std'] = stock_data['close'].rolling(window=100).std()
-        
         return {
             'data': stock_data,
             'lines': {

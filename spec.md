@@ -1,7 +1,7 @@
 # Project Refactoring Functional Specification
 
 ## 1. System Architecture (Refactor Path)
-- `DataService`: Responsible for the FinMind API, fetches stock prices from FinMind.
+- `YFinanceService`: Responsible for the Yahoo Finance API, fetches stock prices from yfinance.
 - `LohasService`: Calculates the 5-lines and channel logic.
 - `AppView`: Responsible for Streamlit UI rendering, tab switching, and interaction.
 

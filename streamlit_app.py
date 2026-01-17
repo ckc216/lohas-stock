@@ -1,25 +1,22 @@
 import streamlit as st
-from services import FinMindService, LohasService
+from services import YFinanceService, LohasService
 from view import AppView
 
-# --- Configuration ---
-API_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRlIjoiMjAyNC0wOS0yMSAyMzo0NToxMSIsInVzZXJfaWQiOiJja2MyMTYiLCJpcCI6IjEyNS4yMjQuMTM0LjIyMSJ9.SDy5B6g5uZZ7R5KYyetxf4UW7U5HBW6-0Em1q9vnzC4'
-
 # --- Initialize Services ---
-finmind_service = FinMindService(API_TOKEN)
+yfinance_service = YFinanceService()
 lohas_service = LohasService()
 app_view = AppView()
 
 # --- Cached Data Fetching ---
 @st.cache_data(ttl=3600)
-def get_stock_id_cached(stock_name: str) -> str | None:
-    """Cached wrapper for stock ID lookup"""
-    return finmind_service.get_stock_id(stock_name)
+def get_stock_info_cached(target: str) -> dict | None:
+    """Cached wrapper for stock info lookup"""
+    return yfinance_service.get_stock_info(target)
 
 @st.cache_data(ttl=3600)
-def fetch_data_cached(ticker: str):
+def fetch_data_cached(ticker: str, market: str):
     """Cached wrapper for data fetching"""
-    return finmind_service.fetch_data(ticker)
+    return yfinance_service.fetch_data(ticker, market)
 
 # --- Main App ---
 AppView.setup_page()
@@ -29,11 +26,15 @@ target = AppView.render_search_input()
 
 if target:
     with st.spinner('Computing Analysis...'):
-        # Get stock ID
-        sid = get_stock_id_cached(target)
-        if sid:
-            # Fetch stock data
-            stock_data = fetch_data_cached(sid)
+        # Get stock info (ID and Market)
+        info = get_stock_info_cached(target)
+        if info:
+            sid = info['id']
+            market = info['market']
+            
+            # Fetch stock data with specific market suffix
+            stock_data = fetch_data_cached(sid, market)
+            
             if stock_data is not None:
                 # Prepare and calculate analysis
                 stock_data = LohasService.prepare_data(stock_data)
@@ -50,4 +51,4 @@ if target:
             else:
                 st.error("Data fetch failed.")
         else:
-            st.warning("Stock not found.")
+            AppView.render_not_found_message(target)
