@@ -14,7 +14,7 @@ def get_stock_info_cached(target: str) -> dict | None:
     return yfinance_service.get_stock_info(target)
 
 @st.cache_data(ttl=3600)
-def fetch_data_cached(ticker: str, market: str):
+def fetch_data_cached(ticker: str, market: str = None):
     return yfinance_service.fetch_data(ticker, market)
 
 @st.cache_data(ttl=3600)

@@ -32,23 +32,29 @@ class YFinanceService:
     
     def get_stock_info(self, target: str) -> dict | None:
         """
-        Lookup stock ID and market info
-        Returns: {'id': '2330', 'market': '上市'} or None
+        Lookup stock ID and market info.
+        If not in CSV but input is numeric, returns ID with None market.
         """
-        if self.ticker_df is None:
-            return None
-            
-        # Try lookup by ID or Name
+        if self.ticker_df is not None:
+            # Try lookup by ID or Name
+            if target.isdigit():
+                match = self.ticker_df[self.ticker_df['代號'] == target]
+            else:
+                match = self.ticker_df[self.ticker_df['名稱'] == target]
+                
+            if not match.empty:
+                return {
+                    'id': match.iloc[0]['代號'],
+                    'market': match.iloc[0]['market']
+                }
+        
+        # Fallback: If input is numeric but not in CSV, allow it with unknown market
         if target.isdigit():
-            match = self.ticker_df[self.ticker_df['代號'] == target]
-        else:
-            match = self.ticker_df[self.ticker_df['名稱'] == target]
-            
-        if not match.empty:
             return {
-                'id': match.iloc[0]['代號'],
-                'market': match.iloc[0]['market']
+                'id': target,
+                'market': None
             }
+            
         return None
     
     def fetch_data(self, ticker: str, market: str = None) -> pd.DataFrame | None:
