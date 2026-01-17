@@ -17,9 +17,14 @@ The code structure is clear and divided into three main parts:
 - `streamlit_app.py`: The main entry point of the application. It handles the UI flow, state management (using `st.cache_data`), and coordinates the `services` and `view`.
 - `services.py`: Contains all the backend logic.
   - `YFinanceService`: Encapsulates all calls to the yfinance API for fetching historical price data and handles stock ID lookup via local CSV.
-  - `LohasService`: Performs the core mathematical calculations, including linear regression for the "Lohas 5-Lines" and moving averages with standard deviations for the "Lohas Channel".
+  - `LohasService`: Performs the core mathematical calculations, including linear regression for the "Lohas 5-Lines", moving averages for the "Lohas Channel", and the 1-6 point scoring logic.
 - `view.py`:
-  - `AppView`: Responsible for rendering all UI components, including the page title, search box, metric cards, and interactive charts drawn with Plotly. It also injects custom CSS to achieve a specific visual style.
+  - `AppView`: Responsible for rendering all UI components.
+- `ticker_scraper.py`: A daily scraper that updates the `stock_ticker.csv` with the latest TWSE/TPEx stock list.
+- `score_scraper.py`: A weekly scraper that calculates Lohas scores for all stocks and stores them in `financial_scores.db`.
+- `data/`:
+  - `stock_ticker.csv`: Mapping of stock names to IDs.
+  - `financial_scores.db`: SQLite database storing historical Lohas scores and trend line data.
 
 ## Building and Running
 

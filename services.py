@@ -128,8 +128,13 @@ class LohasService:
     
     @staticmethod
     def calculate_channel(stock_data: pd.DataFrame) -> dict:
+        """
+        Calculate LOHAS Channel (通道) analysis
+        Uses 100-day moving average with 2 standard deviation bands
+        """
         stock_data['MA100'] = stock_data['close'].rolling(window=100).mean()
         stock_data['MA100_std'] = stock_data['close'].rolling(window=100).std()
+        
         return {
             'data': stock_data,
             'lines': {
@@ -138,3 +143,33 @@ class LohasService:
                 '20W MA': stock_data['MA100'],
             }
         }
+
+    @staticmethod
+    def get_lohas_level(price: float, lines: dict) -> int:
+        """
+        Calculate Lohas Score (1-6) based on current price relative to bands:
+        1: < -2SD
+        2: [-2SD, -1SD)
+        3: [-1SD, Trend)
+        4: [Trend, +1SD)
+        5: [+1SD, +2SD)
+        6: >= +2SD
+        """
+        trend = lines['Trend'].iloc[-1]
+        p1sd = lines['+1SD'].iloc[-1]
+        p2sd = lines['+2SD'].iloc[-1]
+        m1sd = lines['-1SD'].iloc[-1]
+        m2sd = lines['-2SD'].iloc[-1]
+
+        if price < m2sd:
+            return 1
+        elif price < m1sd:
+            return 2
+        elif price < trend:
+            return 3
+        elif price < p1sd:
+            return 4
+        elif price < p2sd:
+            return 5
+        else:
+            return 6
