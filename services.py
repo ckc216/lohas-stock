@@ -4,6 +4,7 @@ Stock Analysis Services
 import requests
 import pandas as pd
 import yfinance as yf
+import sqlite3
 from datetime import datetime, timedelta
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -92,6 +93,21 @@ class YFinanceService:
                     if attempt < max_retries - 1:
                         time.sleep(1)
         return None
+
+    def get_all_scores(self) -> pd.DataFrame:
+        """Fetch all calculated scores from SQLite database"""
+        db_path = os.path.join('data', 'financial_scores.db')
+        if not os.path.exists(db_path):
+            return pd.DataFrame()
+            
+        try:
+            conn = sqlite3.connect(db_path)
+            df = pd.read_sql_query("SELECT * FROM stock_price_trend_lines", conn)
+            conn.close()
+            return df
+        except Exception as e:
+            print(f"Error reading database: {e}")
+            return pd.DataFrame()
 
 
 class LohasService:
