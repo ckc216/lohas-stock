@@ -27,7 +27,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: 4. Run scraper
-        run: python scraper.py
+        run: python ticker_scraper.py
 
       - name: 5. Commit and push changes
         run: |
