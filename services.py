@@ -13,6 +13,15 @@ import os
 import time
 
 
+# --- Constants ---
+DATA_FETCH_YEARS = 3.5
+DATA_FETCH_DAYS = int(DATA_FETCH_YEARS * 365)
+CHANNEL_MA_WINDOW = 100
+CHANNEL_STD_DEV_MULTIPLIER = 2
+MAX_FETCH_RETRIES = 3
+FETCH_RETRY_DELAY_SECONDS = 1
+
+
 class YFinanceService:
     """Responsible for yfinance stock price fetching"""
     
@@ -61,8 +70,7 @@ class YFinanceService:
         """
         Fetch historical stock data with smart suffix detection
         """
-        start = (datetime.today() - timedelta(days=int(3.5 * 365))).strftime('%Y-%m-%d')
-        max_retries = 3
+        start = (datetime.today() - timedelta(days=DATA_FETCH_DAYS)).strftime('%Y-%m-%d')
         
         # Determine suffix based on market
         if market == '上市':
@@ -75,7 +83,7 @@ class YFinanceService:
             
         for suffix in suffixes:
             full_ticker = f"{ticker}{suffix}"
-            for attempt in range(max_retries):
+            for attempt in range(MAX_FETCH_RETRIES):
                 try:
                     # Fetching data
                     ticker_obj = yf.Ticker(full_ticker)
@@ -96,8 +104,8 @@ class YFinanceService:
                         break # Try next suffix or exit
                         
                 except Exception as e:
-                    if attempt < max_retries - 1:
-                        time.sleep(1)
+                    if attempt < MAX_FETCH_RETRIES - 1:
+                        time.sleep(FETCH_RETRY_DELAY_SECONDS)
         return None
 
     def get_all_scores(self) -> pd.DataFrame:
@@ -154,14 +162,14 @@ class LohasService:
         Calculate LOHAS Channel (通道) analysis
         Uses 100-day moving average with 2 standard deviation bands
         """
-        stock_data['MA100'] = stock_data['close'].rolling(window=100).mean()
-        stock_data['MA100_std'] = stock_data['close'].rolling(window=100).std()
+        stock_data['MA100'] = stock_data['close'].rolling(window=CHANNEL_MA_WINDOW).mean()
+        stock_data['MA100_std'] = stock_data['close'].rolling(window=CHANNEL_MA_WINDOW).std()
         
         return {
             'data': stock_data,
             'lines': {
-                'Top': stock_data['MA100'] + 2 * stock_data['MA100_std'],
-                'Bottom': stock_data['MA100'] - 2 * stock_data['MA100_std'],
+                'Top': stock_data['MA100'] + CHANNEL_STD_DEV_MULTIPLIER * stock_data['MA100_std'],
+                'Bottom': stock_data['MA100'] - CHANNEL_STD_DEV_MULTIPLIER * stock_data['MA100_std'],
                 '20W MA': stock_data['MA100'],
             }
         }

@@ -206,6 +206,17 @@ class AppView:
         c3.metric("LAST UPDATED", last_date)
 
     @staticmethod
+    def _apply_common_chart_layout(fig: go.Figure):
+        """Helper to apply consistent styling to Plotly charts."""
+        fig.update_layout(
+            showlegend=False, plot_bgcolor='white', paper_bgcolor='white',
+            margin=dict(l=0, r=0, t=20, b=0),
+            xaxis=dict(showgrid=False, tickfont=dict(color='#424245', size=11)),
+            yaxis=dict(gridcolor='#f5f5f7', side='right', tickfont=dict(color='#424245', size=11)),
+            hovermode="x unified"
+        )
+
+    @staticmethod
     def render_five_lines_chart(stock_data, lines_data: dict):
         custom_hover = "<b>%{fullData.name}</b>: %{y:.2f}<extra></extra>"
         fig = go.Figure()
@@ -221,13 +232,7 @@ class AppView:
             fig.add_trace(go.Scatter(x=stock_data.index, y=lines_data['lines'][name], name=name, line=dict(color=color, width=1), hovertemplate=custom_hover))
         fig.add_trace(go.Scatter(x=stock_data.index, y=lines_data['lines']['Trend'], name='Trend', line=dict(color='#86868b', width=1, dash='dot'), hovertemplate=custom_hover))
         fig.add_trace(go.Scatter(x=stock_data.index, y=stock_data['close'], name='Close', line=dict(color='#1d1d1f', width=2.5), hovertemplate=custom_hover))
-        fig.update_layout(
-            showlegend=False, plot_bgcolor='white', paper_bgcolor='white',
-            margin=dict(l=0, r=0, t=20, b=0),
-            xaxis=dict(showgrid=False, tickfont=dict(color='#424245', size=11)),
-            yaxis=dict(gridcolor='#f5f5f7', side='right', tickfont=dict(color='#424245', size=11)),
-            hovermode="x unified"
-        )
+        AppView._apply_common_chart_layout(fig)
         st.plotly_chart(fig, width='stretch')
 
     @staticmethod
@@ -239,13 +244,7 @@ class AppView:
         fig.add_trace(go.Scatter(x=stock_data.index, y=channel_data['lines']['Bottom'], name='Bottom', line=ch_style, hovertemplate=custom_hover))
         fig.add_trace(go.Scatter(x=stock_data.index, y=channel_data['lines']['20W MA'], name='20W MA', line=dict(color='#d2d2d7', width=1, dash='dash'), hovertemplate=custom_hover))
         fig.add_trace(go.Scatter(x=stock_data.index, y=stock_data['close'], name='Close', line=dict(color='#1d1d1f', width=2.5), hovertemplate=custom_hover))
-        fig.update_layout(
-            showlegend=False, plot_bgcolor='white', paper_bgcolor='white',
-            margin=dict(l=0, r=0, t=20, b=0),
-            xaxis=dict(showgrid=False, tickfont=dict(color='#424245', size=11)),
-            yaxis=dict(gridcolor='#f5f5f7', side='right', tickfont=dict(color='#424245', size=11)),
-            hovermode="x unified"
-        )
+        AppView._apply_common_chart_layout(fig)
         st.plotly_chart(fig, width='stretch')
 
     @staticmethod
