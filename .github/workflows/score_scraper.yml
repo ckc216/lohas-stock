@@ -1,10 +1,10 @@
-name: Weekly Lohas Score Scraper
+name: Daily Lohas Score Scraper
 
 on:
   workflow_dispatch:
   schedule:
-    # Runs at 15:00 UTC every Friday (11 PM in Taiwan)
-    - cron: '0 15 * * 5'
+    # Runs at 14:00 UTC, which is 10 PM in Taiwan (UTC+8)
+    - cron: '0 14 * * *'
 
 jobs:
   scrape-and-commit-scores:
