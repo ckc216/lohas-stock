@@ -283,18 +283,33 @@ class AppView:
             return
         last_date = df['date'].iloc[0] if 'date' in df.columns else "Unknown"
         st.markdown(f'<p style="text-align: right; color: #86868b; font-size: 12px; margin-bottom: 5px;">Global Snapshot: {last_date}</p>', unsafe_allow_html=True)
-        search_query = st.text_input("Search...", placeholder="Search company name or ID...", label_visibility="collapsed")
+        
+        _, col, _ = st.columns([1, 2, 1])
+        with col:
+            search_query = st.text_input("Search...", placeholder="Search company name or ID...", label_visibility="collapsed")
+        
         filtered_df = df.copy()
         if search_query:
             filtered_df = filtered_df[filtered_df['stock_id'].astype(str).str.contains(search_query) | filtered_df['stock_name'].str.contains(search_query)]
         
         display_cols = ['stock_id', 'stock_name', 'level', 'close_price', 'lower_2sd', 'lower_1sd', 'trend_line', 'upper_1sd', 'upper_2sd']
+        rename_map = {
+            'lower_2sd': '-2SD',
+            'lower_1sd': '-1SD',
+            'upper_1sd': '+1SD',
+            'upper_2sd': '+2SD'
+        }
         
-        # 使用 Pandas Styler 設定風格
-        styled_df = filtered_df[display_cols].style.set_properties(**{
-            'background-color': '#f5f5f7',
-            'color': '#1d1d1f',
-            'border-color': '#d2d2d7'
-        })
+        final_df = filtered_df[display_cols].rename(columns=rename_map)
         
-        st.dataframe(styled_df, use_container_width=True, height=600, hide_index=True)
+        column_config = {
+            "level": st.column_config.NumberColumn("level", format="%d"),
+            "close_price": st.column_config.NumberColumn("close_price", format="%.2f"),
+            "trend_line": st.column_config.NumberColumn("trend_line", format="%.2f"),
+            "-2SD": st.column_config.NumberColumn("-2SD", format="%.2f"),
+            "-1SD": st.column_config.NumberColumn("-1SD", format="%.2f"),
+            "+1SD": st.column_config.NumberColumn("+1SD", format="%.2f"),
+            "+2SD": st.column_config.NumberColumn("+2SD", format="%.2f"),
+        }
+        
+        st.dataframe(final_df, use_container_width=True, height=600, hide_index=True, column_config=column_config)
