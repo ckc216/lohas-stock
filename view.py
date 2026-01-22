@@ -72,6 +72,13 @@ class AppView:
             
             .nav-item:hover .nav-link { opacity: 1; text-decoration: none !important; }
             
+            /* 讓導覽列圖示變黑白並調整大小 */
+            .nav-link span {
+                filter: grayscale(100%);
+                font-size: 20px;
+                line-height: 1;
+            }
+            
             /* 下拉選單 (Dropdown) */
             .dropdown-menu {
                 position: absolute;
@@ -190,7 +197,10 @@ class AppView:
                         <a class="nav-link" style="opacity: 0.2; cursor: default;">Financials</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" style="opacity: 0.2; cursor: default;">Economy</a>
+                        <a class="nav-link" href="#"><span>📈</span> Economy</a>
+                        <div class="dropdown-menu">
+                            <a href="/?page=economy" target="_self" class="dropdown-item">Fear and Greed</a>
+                        </div>
                     </li>
                 </ul>
             </div>
@@ -311,5 +321,116 @@ class AppView:
             "+1SD": st.column_config.NumberColumn("+1SD", format="%.2f"),
             "+2SD": st.column_config.NumberColumn("+2SD", format="%.2f"),
         }
-        
         st.dataframe(final_df, use_container_width=True, height=600, hide_index=True, column_config=column_config)
+
+    @staticmethod
+    def render_economy_page(data: dict):
+        """Render the Economy page with CNN Fear & Greed Index"""
+        st.markdown('<p class="main-title">Market Sentiment.</p>', unsafe_allow_html=True)
+        st.markdown('<p class="sub-title">CNN Fear & Greed Index</p>', unsafe_allow_html=True)
+        
+        tab1, tab2 = st.tabs(["Overview", "Timeline"])
+        
+        with tab1:
+            col1, col2 = st.columns([2, 1])
+            with col1:
+                AppView.render_fear_greed_gauge(data['current_score'], data['current_rating'])
+                st.markdown(f'<p style="color: #86868b; font-size: 12px; text-align: center;">Last updated {data["last_updated"]}</p>', unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown('<div style="padding-top: 40px;"></div>', unsafe_allow_html=True)
+                metrics = [
+                    ("Previous close", data['previous_close']),
+                    ("1 week ago", data['previous_1_week']),
+                    ("1 month ago", data['previous_1_month']),
+                    ("1 year ago", data['previous_1_year'])
+                ]
+                
+                for label, value in metrics:
+                    rating = "Neutral"
+                    if value <= 25: rating = "Extreme Fear"
+                    elif value <= 45: rating = "Fear"
+                    elif value <= 55: rating = "Neutral"
+                    elif value <= 75: rating = "Greed"
+                    else: rating = "Extreme Greed"
+                    
+                    color = "#1d1d1f"
+                    if "Greed" in rating: color = "#00c805"
+                    elif "Fear" in rating: color = "#ff3b30"
+                    
+                    st.markdown(f"""
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 0.5px solid #d2d2d7;">
+                            <div>
+                                <div style="font-size: 14px; color: #424245;">{label}</div>
+                                <div style="font-size: 16px; font-weight: 600; color: {color};">{rating}</div>
+                            </div>
+                            <div style="width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid #d2d2d7; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600;">
+                                {int(value)}
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+        with tab2:
+            AppView.render_fear_greed_timeline(data['historical_data'])
+
+    @staticmethod
+    def render_fear_greed_gauge(score: float, rating: str):
+        """Render the Gauge chart for Fear & Greed Index"""
+        fig = go.Figure(go.Indicator(
+            mode = "gauge+number",
+            value = score,
+            domain = {'x': [0, 1], 'y': [0, 1]},
+            title = {'text': rating.upper(), 'font': {'size': 24, 'color': '#1d1d1f'}},
+            gauge = {
+                'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#86868b"},
+                'bar': {'color': "#1d1d1f", 'thickness': 0.15},
+                'bgcolor': "white",
+                'borderwidth': 0,
+                'steps': [
+                    {'range': [0, 25], 'color': '#f5f5f7'},
+                    {'range': [25, 45], 'color': '#e5e5e7'},
+                    {'range': [45, 55], 'color': '#d2d2d7'},
+                    {'range': [55, 75], 'color': '#e5e5e7'},
+                    {'range': [75, 100], 'color': '#f5f5f7'},
+                ],
+                'threshold': {
+                    'line': {'color': "#1d1d1f", 'width': 4},
+                    'thickness': 0.75,
+                    'value': score
+                }
+            }
+        ))
+        
+        fig.update_layout(
+            paper_bgcolor='white',
+            font={'color': "#1d1d1f", 'family': "sans-serif"},
+            margin=dict(l=20, r=20, t=50, b=20),
+            height=400
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    @staticmethod
+    def render_fear_greed_timeline(df: pd.DataFrame):
+        """Render the historical timeline for Fear & Greed Index"""
+        fig = go.Figure()
+        
+        # Add historical line
+        fig.add_trace(go.Scatter(
+            x=df['date'], y=df['score'],
+            name='Fear & Greed Index',
+            line=dict(color='#0071e3', width=2),
+            hovertemplate="Score: %{y:.0f}<extra></extra>"
+        ))
+        
+        # Add reference lines
+        for val, label in [(25, "Extreme Fear"), (75, "Extreme Greed")]:
+            fig.add_hline(y=val, line_dash="dot", line_color="#d2d2d7", annotation_text=label)
+
+        fig.update_layout(
+            showlegend=False, plot_bgcolor='white', paper_bgcolor='white',
+            margin=dict(l=0, r=0, t=20, b=0),
+            xaxis=dict(showgrid=False, tickfont=dict(color='#424245', size=11), rangeslider=dict(visible=True)),
+            yaxis=dict(gridcolor='#f5f5f7', side='right', tickfont=dict(color='#424245', size=11), range=[0, 100]),
+            hovermode="x unified"
+        )
+        st.plotly_chart(fig, use_container_width=True)

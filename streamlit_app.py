@@ -1,11 +1,12 @@
 import streamlit as st
 import pandas as pd
-from services import YFinanceService, LohasService
+from services import YFinanceService, LohasService, EconomyService
 from view import AppView
 
 # --- Initialize Services ---
 yfinance_service = YFinanceService()
 lohas_service = LohasService()
+economy_service = EconomyService()
 app_view = AppView()
 
 # --- Cached Data Fetching ---
@@ -21,6 +22,10 @@ def fetch_data_cached(ticker: str, market: str = None):
 def get_all_scores_cached():
     return yfinance_service.get_all_scores()
 
+@st.cache_data(ttl=600)
+def get_fear_greed_data_cached():
+    return EconomyService.fetch_fear_greed_index()
+
 # --- Routing Logic ---
 # Read page from URL query parameters
 query_params = st.query_params
@@ -29,7 +34,8 @@ current_page = query_params.get("page", "individual")
 # --- UI Setup ---
 AppView.setup_page()
 AppView.render_apple_nav()
-AppView.render_header()
+if current_page != "economy":
+    AppView.render_header()
 
 # --- Content Routing ---
 if current_page == "individual":
@@ -64,3 +70,11 @@ elif current_page == "dashboard":
     with st.spinner('Loading Market Overview...'):
         df_all = get_all_scores_cached()
         AppView.render_market_dashboard(df_all)
+
+elif current_page == "economy":
+    with st.spinner('Fetching Market Sentiment...'):
+        fg_data = get_fear_greed_data_cached()
+        if fg_data:
+            AppView.render_economy_page(fg_data)
+        else:
+            st.error("Failed to fetch CNN Fear & Greed Index. Please try again later.")

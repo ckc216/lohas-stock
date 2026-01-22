@@ -195,3 +195,52 @@ class LohasService:
             return 5
         else:
             return 6
+
+
+class EconomyService:
+    """Service to fetch global economic indicators like CNN Fear & Greed Index"""
+    
+    # Updated working endpoint for graph and current data
+    CNN_GRAPH_URL = "https://production.dataviz.cnn.io/index/fearandgreed/graphdata/"
+    HEADERS = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+        'Referer': 'https://www.cnn.com/markets/fear-and-greed'
+    }
+
+    @staticmethod
+    def fetch_fear_greed_index() -> dict | None:
+        """Fetch CNN Fear & Greed Index data"""
+        try:
+            # Fetch data from roughly 1 year ago
+            start_date = (datetime.today() - timedelta(days=366)).strftime('%Y-%m-%d')
+            url = f"{EconomyService.CNN_GRAPH_URL}{start_date}"
+            
+            response = requests.get(url, headers=EconomyService.HEADERS, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Extract main components
+                fear_greed = data.get('fear_and_greed', {})
+                historical = data.get('fear_and_greed_historical', {}).get('data', [])
+                
+                # Format historical data for Plotly
+                df_history = pd.DataFrame(historical)
+                if not df_history.empty:
+                    df_history['x'] = pd.to_datetime(df_history['x'], unit='ms')
+                    df_history.rename(columns={'x': 'date', 'y': 'score'}, inplace=True)
+                    df_history = df_history.sort_values('date')
+
+                return {
+                    'current_score': fear_greed.get('score', 0),
+                    'current_rating': fear_greed.get('rating', 'Neutral').title(),
+                    'last_updated': fear_greed.get('timestamp', ''),
+                    'previous_close': fear_greed.get('previous_close', 0),
+                    'previous_1_week': fear_greed.get('previous_1_week', 0),
+                    'previous_1_month': fear_greed.get('previous_1_month', 0),
+                    'previous_1_year': fear_greed.get('previous_1_year', 0),
+                    'historical_data': df_history
+                }
+        except Exception as e:
+            print(f"Error fetching Fear & Greed Index: {e}")
+        return None
