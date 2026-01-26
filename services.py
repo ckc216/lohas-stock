@@ -244,3 +244,88 @@ class EconomyService:
         except Exception as e:
             print(f"Error fetching Fear & Greed Index: {e}")
         return None
+
+
+class SQLiteHandler:
+    def __init__(self, db_path):
+        self.db_path = db_path
+        self._init_db()
+
+    def _init_db(self):
+        """Initialize database and tables if they don't exist"""
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        # 建立股價趨勢線資料表
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS stock_price_trend_lines (
+            stock_id TEXT PRIMARY KEY,
+            date TEXT NOT NULL,
+            stock_name TEXT,
+            level REAL,
+            close_price REAL,
+            upper_2sd REAL,
+            upper_1sd REAL,
+            trend_line REAL,
+            lower_1sd REAL,
+            lower_2sd REAL
+        );
+        """)
+        
+        # 建立財務評價資料表
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS stock_financial_scores (
+            stock_id TEXT NOT NULL,
+            stock_name TEXT,
+            上市櫃日期 TEXT,
+            財報季度 TEXT,
+            營收月份 TEXT,
+            營收年增率 REAL,
+            營業利益率 REAL,
+            稅後淨利年增率 REAL,
+            每股盈餘EPS REAL,
+            存貨周轉率 TEXT,
+            自由現金流量 REAL,
+            本期綜合評分 REAL,
+            綜合評分變化 REAL,
+            UNIQUE (stock_id, 營收月份)
+        );
+        """)
+        conn.commit()
+        conn.close()
+
+    def save_scores(self, data_list):
+        """Batch save scores to database using REPLACE (Upsert)"""
+        if not data_list: return
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        sql = "REPLACE INTO stock_price_trend_lines VALUES (?,?,?,?,?,?,?,?,?,?)"
+        try:
+            cursor.executemany(sql, data_list)
+            conn.commit()
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+        finally:
+            conn.close()
+
+    def save_financial_scores(self, data_list):
+        """Batch save financial scores using INSERT OR IGNORE"""
+        if not data_list: return
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        sql = """
+        INSERT OR IGNORE INTO stock_financial_scores (
+            stock_id, stock_name, 上市櫃日期, 財報季度, 營收月份,
+            營收年增率, 營業利益率, 稅後淨利年增率, 每股盈餘EPS,
+            存貨周轉率, 自由現金流量, 本期綜合評分, 綜合評分變化
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        try:
+            cursor.executemany(sql, data_list)
+            conn.commit()
+        except sqlite3.Error as e:
+            print(f"Database error (Financial Scores): {e}")
+        finally:
+            conn.close()
+

@@ -5,6 +5,9 @@ import time
 import random
 import numpy as np
 import urllib3
+import os
+from tqdm import tqdm
+from services import SQLiteHandler
 
 # 關閉 SSL 警告訊息
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -65,7 +68,7 @@ class StockScraper:
                     vals = []
                     for c in cells[1:]:
                         txt = c.get_text(strip=True).replace(',', '').replace('%', '')
-                        try: vals.append(float(txt))
+                        try: vals.append(float(txt)) # noqa
                         except: vals.append(np.nan)
                     results[name] = vals
         return results
@@ -118,7 +121,7 @@ class StockScraper:
             idx_date = headers.index('年/月')
             idx_rev = headers.index('營收')
             idx_yoy = headers.index('年增率')
-        except:
+        except ValueError:
             return pd.DataFrame()
 
         data = []
@@ -136,7 +139,7 @@ class StockScraper:
                         rev = float(rev_str) if rev_str not in ['-', ''] else 0.0
                         yoy = float(yoy_str) if yoy_str not in ['-', ''] else 0.0
                         data.append({'date': full_date, 'year': y+1911, 'month': m, 'revenue': rev, 'yoy': yoy})
-                    except:
+                    except ValueError:
                         continue
         return pd.DataFrame(data)
 
@@ -211,21 +214,39 @@ class FinancialScorer:
         results = {}
         
         # 1. 抓取所有數據
-        print("Scraping Profitability Data (zcr)...")
+        print(f"Scraping Data for {stock_id}...")
         df_zcr = self.scraper.get_profitability_data(stock_id)
-        
-        print("Scraping Monthly Revenue (zch)...")
         df_rev = self.scraper.get_monthly_revenue(stock_id)
-        
-        print("Scraping Cashflow (zc3)...")
         df_cf = self.scraper.get_cashflow_data(stock_id)
-        
-        print("Scraping Inventory Metrics (zcq/zcp)...")
         inv_check = self.scraper.get_inventory_check_data(stock_id)
 
         # 2. 計算各項分數
         results['月營收評分'] = self.score_revenue(df_rev)
         
+        # 提取中繼資料 (Metadata)
+        # 營收月份 (YYYY-MM)
+        if df_rev is not None and not df_rev.empty:
+            last_rev = df_rev.iloc[0]
+            results['營收月份'] = f"{int(last_rev['year'])}-{int(last_rev['month']):02d}"
+        else:
+            results['營收月份'] = None
+
+        # 財報季度 (YYYY.QQ) - 智慧判斷民國或西元
+        if df_zcr is not None and not df_zcr.empty and 'quarter' in df_zcr:
+            last_q_str = df_zcr.iloc[0]['quarter'] # e.g. "2025.3Q" or "114.1Q"
+            try:
+                if '.' in last_q_str and 'Q' in last_q_str:
+                    year_part, q_part = last_q_str.split('.')
+                    year_val = int(year_part)
+                    ad_year = year_val + 1911 if year_val < 1000 else year_val
+                    results['財報季度'] = f"{ad_year}.{q_part}"
+                else:
+                     results['財報季度'] = last_q_str
+            except ValueError:
+                results['財報季度'] = last_q_str
+        else:
+            results['財報季度'] = None
+
         if df_zcr is None:
             results['營業利益率評分'] = "無法評分"
             results['淨利成長評分'] = "無法評分"
@@ -249,6 +270,21 @@ class FinancialScorer:
             results['自由現金流評分'] = "無法評分"
         else:
             results['自由現金流評分'] = self.score_fcf(df_cf['fcf'].tolist() if not df_cf.empty else [])
+
+        # 3. 計算總分 (平均)
+        score_keys = ['月營收評分', '營業利益率評分', '淨利成長評分', 'EPS評分', '存貨周轉率評分', '自由現金流評分']
+        raw_scores = [results.get(k) for k in score_keys]
+
+        if any(s == "無法評分" for s in raw_scores):
+            results['總分'] = "無法評分"
+        else:
+            # 過濾掉 "不評分" 並確保是數字
+            valid_scores = [s for s in raw_scores if isinstance(s, (int, float))]
+            
+            if valid_scores:
+                results['總分'] = round(sum(valid_scores) / len(valid_scores), 2)
+            else:
+                results['總分'] = "不評分"
 
         return results
 
@@ -278,7 +314,7 @@ class FinancialScorer:
                     if row['year'] == latest['year'] and row['month'] >= 1: continue
                     yoy_series.append(row['yoy'])
                     needed -= 1
-            except:
+            except (ValueError, IndexError):
                 return 0
         else:
             yoy_series = df['yoy'].head(6).tolist()
@@ -392,19 +428,109 @@ class FinancialScorer:
         if sum6q > 0 and sum4q <= 0: return 1
         return 0
 
-if __name__ == "__main__":
-    stock_id = input("請輸入台股股票代號 (例如 2330): ")
+def run_bulk_financial_analysis():
+    """
+    執行財務報表評分分析，遍歷 stock_ticker.csv 中的所有股票。
+    """
+    db_path = os.path.join('data', 'financial_scores.db')
+    ticker_csv = os.path.join('data', 'stock_ticker.csv')
+    
+    if not os.path.exists(ticker_csv):
+        print(f"Error: {ticker_csv} not found.")
+        return
+
+    tickers_df = pd.read_csv(ticker_csv)
+    tickers_df['代號'] = tickers_df['代號'].astype(str)
+    
     scorer = FinancialScorer()
+    db_handler = SQLiteHandler(db_path)
     
-    print(f"\n開始分析 {stock_id} ...")
-    start_time = time.time()
+    results = []
     
-    results = scorer.analyze_stock(stock_id)
+    print(f"Starting bulk financial analysis for {len(tickers_df)} stocks...")
     
-    print(f"\n--- {stock_id} 分析結果 (耗時: {time.time()-start_time:.2f}秒) ---")
-    for k, v in results.items():
-        if isinstance(v, (int, float)):
-            score_str = f"{v} 分"
-        else:
-            score_str = str(v)
-        print(f"{k}: {score_str}")
+    for _, row in tqdm(tickers_df.iterrows(), total=len(tickers_df), desc="Financial Scoring"):
+        sid = row['代號']
+        sname = row['名稱']
+        list_date = row['list_date']
+        
+        try:
+            analysis = scorer.analyze_stock(sid)
+            
+            # 檢查過濾條件 1: 如果有任何一項評分為 "無法評分" 則跳過
+            score_keys = ['月營收評分', '營業利益率評分', '淨利成長評分', 'EPS評分', '存貨周轉率評分', '自由現金流評分']
+            if any(analysis.get(k) == "無法評分" for k in score_keys):
+                continue
+            
+            # 檢查關鍵欄位是否存在
+            if not analysis.get('營收月份') or not analysis.get('財報季度'):
+                continue
+
+            # 準備寫入資料庫的元組
+            data_row = (
+                sid, sname, list_date,
+                analysis.get('財報季度'),
+                analysis.get('營收月份'),
+                analysis.get('月營收評分'),
+                analysis.get('營業利益率評分'),
+                analysis.get('淨利成長評分'),
+                analysis.get('EPS評分'),
+                analysis.get('存貨周轉率評分'),
+                analysis.get('自由現金流評分'),
+                analysis.get('總分'),
+                None # 綜合評分變化
+            )
+            
+            results.append(data_row)
+            
+            if len(results) >= 20:
+                db_handler.save_financial_scores(results)
+                results = []
+                
+        except Exception as e:
+            print(f"\nError processing {sid}: {e}")
+            continue
+
+    if results:
+        db_handler.save_financial_scores(results)
+    print("\nBulk financial analysis completed.")
+
+if __name__ == "__main__":
+    choice = input("選擇模式: [1] 單一股票查詢 [2] 全台股批次更新: ")
+    
+    if choice == '1':
+        stock_id = input("請輸入台股股票代號 (例如 2330): ")
+        scorer = FinancialScorer()
+        print(f"\n開始分析 {stock_id} ...")
+        start_time = time.time()
+        results = scorer.analyze_stock(stock_id)
+        
+        print(f"\n--- {stock_id} 分析結果 (耗時: {time.time()-start_time:.2f}秒) ---")
+        for k, v in results.items():
+            print(f"{k}: {v} 分" if isinstance(v, (int, float)) else f"{k}: {v}")
+
+        # 單一查詢也嘗試寫入資料庫
+        score_keys = ['月營收評分', '營業利益率評分', '淨利成長評分', 'EPS評分', '存貨周轉率評分', '自由現金流評分']
+        if not any(results.get(k) == "無法評分" for k in score_keys) and results.get('營收月份'):
+            ticker_csv = os.path.join('data', 'stock_ticker.csv')
+            stock_name, list_date = "未知", "未知"
+            if os.path.exists(ticker_csv):
+                df_tickers = pd.read_csv(ticker_csv)
+                match = df_tickers[df_tickers['代號'].astype(str) == str(stock_id)]
+                if not match.empty:
+                    stock_name, list_date = match.iloc[0]['名稱'], match.iloc[0]['list_date']
+
+            data_row = (
+                str(stock_id), stock_name, list_date,
+                results.get('財報季度'), results.get('營收月份'),
+                results.get('月營收評分'), results.get('營業利益率評分'),
+                results.get('淨利成長評分'), results.get('EPS評分'),
+                results.get('存貨周轉率評分'), results.get('自由現金流評分'),
+                results.get('總分'), None
+            )
+            db_path = os.path.join('data', 'financial_scores.db')
+            db_handler = SQLiteHandler(db_path)
+            db_handler.save_financial_scores([data_row])
+            print(f"\n[成功] 已將 {stock_id} 的評分結果寫入資料庫。")
+    else:
+        run_bulk_financial_analysis()

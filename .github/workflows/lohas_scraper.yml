@@ -27,7 +27,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: 4. Run score scraper
-        run: python score_scraper.py
+        run: python lohas_scraper.py
 
       - name: 5. Commit and push database changes
         run: |

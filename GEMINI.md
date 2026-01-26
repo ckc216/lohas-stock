@@ -21,7 +21,8 @@ The code structure is clear and divided into three main parts:
 - `view.py`:
   - `AppView`: Responsible for rendering all UI components.
 - `ticker_scraper.py`: A daily scraper that updates the `stock_ticker.csv` with the latest TWSE/TPEx stock list.
-- `score_scraper.py`: A weekly scraper that calculates Lohas scores for all stocks and stores them in `financial_scores.db`.
+- `lohas_scraper.py`: A daily scraper that calculates Lohas scores for all stocks and stores them in `financial_scores.db`.
+- `financial_scraper.py`: A scraper and scorer that calculates financial fundamental scores for stocks and stores them in `financial_scores.db`.
 - `data/`:
   - `stock_ticker.csv`: Mapping of stock names to IDs.
   - `financial_scores.db`: SQLite database storing historical Lohas scores and trend line data.
