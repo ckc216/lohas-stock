@@ -288,6 +288,90 @@ class FinancialScorer:
 
         return results
 
+    def analyze_stock_detailed(self, stock_id):
+        """
+        分析一檔股票，並回傳評分結果與原始數據 DataFrame
+        Returns: (results, { 'rev': df_rev, 'zcr': df_zcr, 'cf': df_cf })
+        """
+        results = {}
+        
+        # 1. 抓取所有數據
+        print(f"Scraping Data for {stock_id}...")
+        df_zcr = self.scraper.get_profitability_data(stock_id)
+        df_rev = self.scraper.get_monthly_revenue(stock_id)
+        df_cf = self.scraper.get_cashflow_data(stock_id)
+        inv_check = self.scraper.get_inventory_check_data(stock_id)
+
+        # 2. 計算各項分數
+        results['月營收評分'] = self.score_revenue(df_rev)
+        
+        # 提取中繼資料
+        if df_rev is not None and not df_rev.empty:
+            last_rev = df_rev.iloc[0]
+            results['營收月份'] = f"{int(last_rev['year'])}-{int(last_rev['month']):02d}"
+        else:
+            results['營收月份'] = "N/A"
+
+        if df_zcr is not None and not df_zcr.empty and 'quarter' in df_zcr:
+            last_q_str = df_zcr.iloc[0]['quarter']
+            try:
+                if '.' in last_q_str and 'Q' in last_q_str:
+                    year_part, q_part = last_q_str.split('.')
+                    year_val = int(year_part)
+                    ad_year = year_val + 1911 if year_val < 1000 else year_val
+                    results['財報季度'] = f"{ad_year}.{q_part}"
+                else:
+                     results['財報季度'] = last_q_str
+            except ValueError:
+                results['財報季度'] = last_q_str
+        else:
+            results['財報季度'] = "N/A"
+
+        # 評分邏輯
+        if df_zcr is None:
+            results['營業利益率評分'] = "無法評分"
+            results['淨利成長評分'] = "無法評分"
+            results['EPS評分'] = "無法評分"
+            results['存貨周轉率評分'] = "無法評分"
+        elif df_zcr.empty:
+            results['營業利益率評分'] = 0
+            results['淨利成長評分'] = 0
+            results['EPS評分'] = 0
+            results['存貨周轉率評分'] = "不評分"
+        else:
+            results['營業利益率評分'] = self.score_operating_profit_margin(df_zcr['營業利益率'].tolist() if '營業利益率' in df_zcr else [])
+            results['淨利成長評分'] = self.score_net_profit_growth(df_zcr['稅後淨利成長率'].tolist() if '稅後淨利成長率' in df_zcr else [])
+            results['EPS評分'] = self.score_eps(df_zcr['每股盈餘'].tolist() if '每股盈餘' in df_zcr else [])
+            
+            turnover_list = df_zcr['存貨週轉率(次)'].tolist() if '存貨週轉率(次)' in df_zcr else []
+            results['存貨周轉率評分'] = self.score_inventory(turnover_list, inv_check)
+
+        if df_cf is None:
+            results['自由現金流評分'] = "無法評分"
+        else:
+            results['自由現金流評分'] = self.score_fcf(df_cf['fcf'].tolist() if not df_cf.empty else [])
+
+        # 3. 計算總分
+        score_keys = ['月營收評分', '營業利益率評分', '淨利成長評分', 'EPS評分', '存貨周轉率評分', '自由現金流評分']
+        raw_scores = [results.get(k) for k in score_keys]
+
+        if any(s == "無法評分" for s in raw_scores):
+            results['總分'] = "無法評分"
+        else:
+            valid_scores = [s for s in raw_scores if isinstance(s, (int, float))]
+            if valid_scores:
+                results['總分'] = round(sum(valid_scores) / len(valid_scores), 2)
+            else:
+                results['總分'] = "不評分"
+
+        raw_data = {
+            'revenue': df_rev,
+            'profitability': df_zcr,
+            'cashflow': df_cf
+        }
+        
+        return results, raw_data
+
     # --- 以下為純邏輯評分函式 ---
 
     def score_revenue(self, df):

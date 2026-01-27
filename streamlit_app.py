@@ -2,11 +2,13 @@ import streamlit as st
 import pandas as pd
 from services import YFinanceService, LohasService, EconomyService
 from view import AppView
+from financial_scraper import FinancialScorer
 
 # --- Initialize Services ---
 yfinance_service = YFinanceService()
 lohas_service = LohasService()
 economy_service = EconomyService()
+financial_scorer = FinancialScorer()
 app_view = AppView()
 
 # --- Cached Data Fetching ---
@@ -70,6 +72,47 @@ elif current_page == "dashboard":
     with st.spinner('Loading Market Overview...'):
         df_all = get_all_scores_cached()
         AppView.render_market_dashboard(df_all)
+
+elif current_page == "financials_six_index":
+    target = AppView.render_search_input()
+
+    if target:
+        # Resolve Ticker and Name
+        ticker = None
+        stock_name = None
+        
+        info = get_stock_info_cached(target)
+        if info:
+            ticker = info['id']
+            # Find name from CSV if available, otherwise use target if it's not the id, or just id
+            if target == ticker: # User entered ID
+                 # Try to look up name again or set default
+                 match = yfinance_service.ticker_df[yfinance_service.ticker_df['代號'] == ticker]
+                 if not match.empty:
+                     stock_name = match.iloc[0]['名稱']
+                 else:
+                     stock_name = ticker
+            else: # User entered Name
+                stock_name = target
+        elif target.isdigit():
+             ticker = target
+             stock_name = target
+
+        if ticker:
+            display_name = f"{stock_name} ({ticker})" if stock_name and stock_name != ticker else ticker
+            with st.spinner(f'Analyzing Financial Data for {display_name}...'):
+                try:
+                    results, raw_data = financial_scorer.analyze_stock_detailed(ticker)
+                    if results and results.get('總分') != "無法評分":
+                        AppView.render_financial_dashboard(ticker, stock_name if stock_name else ticker, results, raw_data)
+                    else:
+                        st.error(f"Could not retrieve sufficient financial data for {display_name}. Please check if the stock is listed on TWSE/TPEx.")
+                except Exception as e:
+                    st.error(f"An error occurred during analysis: {e}")
+        else:
+            AppView.render_not_found_message(target)
+    else:
+        st.markdown('<p style="text-align: center; color: #86868b; margin-top: 20px;">Enter a stock ticker or name to view Six-Index Financial Scores.</p>', unsafe_allow_html=True)
 
 elif current_page == "economy":
     with st.spinner('Fetching Market Sentiment...'):

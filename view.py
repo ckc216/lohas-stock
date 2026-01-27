@@ -47,7 +47,7 @@ class AppView:
             .nav-list {
                 list-style: none;
                 display: flex;
-                gap: 40px;
+                gap: 60px; /* 增加間距 */
                 margin: 0;
                 padding: 0;
             }
@@ -82,19 +82,21 @@ class AppView:
             /* 下拉選單 (Dropdown) */
             .dropdown-menu {
                 position: absolute;
-                top: 100%;
+                top: 85%;
                 left: 50%;
                 transform: translateX(-50%) translateY(-10px);
                 background: rgba(255, 255, 255, 0.98);
                 border: 0.5px solid rgba(0,0,0,0.1);
                 border-radius: 12px;
-                padding: 12px;
+                padding: 8px;
+                padding-top: 8px;
                 min-width: 240px; /* 選單寬度同步增加 */
                 box-shadow: 0 20px 40px rgba(0,0,0,0.1);
                 opacity: 0;
                 visibility: hidden;
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                transition: all 0.2s ease-in-out;
                 z-index: 1000000;
+                display: block;
             }
             
             .nav-item:hover .dropdown-menu {
@@ -110,7 +112,8 @@ class AppView:
                 text-decoration: none !important; /* 移除底線 */
                 font-size: 16px; /* 放大選單字體 */
                 border-radius: 8px;
-                transition: background 0.2s;
+                transition: background 0.1s;
+                cursor: pointer;
             }
             
             .dropdown-item:hover {
@@ -189,17 +192,20 @@ class AppView:
                     <li class="nav-item">
                         <a class="nav-link" href="#"><span>♫</span> LOHAS Five-Line</a>
                         <div class="dropdown-menu">
-                            <a href="/?page=individual" target="_self" class="dropdown-item">Stock Insights</a>
-                            <a href="/?page=dashboard" target="_self" class="dropdown-item">Market Overview</a>
+                            <a href="?page=individual" target="_self" class="dropdown-item">Stock Insights</a>
+                            <a href="?page=dashboard" target="_self" class="dropdown-item">Market Overview</a>
                         </div>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" style="opacity: 0.2; cursor: default;">Financials</a>
+                        <a class="nav-link" href="#"><span>💰</span> Financials</a>
+                        <div class="dropdown-menu">
+                             <a href="?page=financials_six_index" target="_self" class="dropdown-item">Six-Index Scores</a>
+                        </div>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#"><span>📈</span> Economy</a>
                         <div class="dropdown-menu">
-                            <a href="/?page=economy" target="_self" class="dropdown-item">Fear and Greed</a>
+                            <a href="?page=economy" target="_self" class="dropdown-item">Fear and Greed</a>
                         </div>
                     </li>
                 </ul>
@@ -321,7 +327,7 @@ class AppView:
             "+1SD": st.column_config.NumberColumn("+1SD", format="%.2f"),
             "+2SD": st.column_config.NumberColumn("+2SD", format="%.2f"),
         }
-        st.dataframe(final_df, use_container_width=True, height=600, hide_index=True, column_config=column_config)
+        st.dataframe(final_df, width='stretch', height=600, hide_index=True, column_config=column_config)
 
     @staticmethod
     def render_economy_page(data: dict):
@@ -407,7 +413,7 @@ class AppView:
             margin=dict(l=20, r=20, t=50, b=20),
             height=400
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
 
     @staticmethod
     def render_fear_greed_timeline(df: pd.DataFrame):
@@ -433,4 +439,118 @@ class AppView:
             yaxis=dict(gridcolor='#f5f5f7', side='right', tickfont=dict(color='#424245', size=11), range=[0, 100]),
             hovermode="x unified"
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
+
+    @staticmethod
+    def render_financial_dashboard(ticker: str, stock_name: str, results: dict, raw_data: dict):
+        """Render the Six-Index Scores dashboard"""
+        
+        # 1. Info Header (Ticker & Dates)
+        display_title = f"{ticker} {stock_name}" if stock_name and stock_name != ticker else ticker
+        
+        st.markdown(f"""
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; padding: 0 10px;">
+                <div>
+                    <div style="font-size: 42px; font-weight: 700; color: #1d1d1f;">{display_title}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 14px; color: #86868b; margin-bottom: 2px;">FISCAL QUARTER</div>
+                    <div style="font-size: 24px; font-weight: 600; color: #1d1d1f; margin-bottom: 8px;">{results.get('財報季度', 'N/A')}</div>
+                    <div style="font-size: 14px; color: #86868b; margin-bottom: 2px;">REVENUE MONTH</div>
+                    <div style="font-size: 24px; font-weight: 600; color: #1d1d1f;">{results.get('營收月份', 'N/A')}</div>
+                </div>
+            </div>
+            <hr style="border: 0; border-top: 0.5px solid #d2d2d7; margin-bottom: 30px;">
+        """, unsafe_allow_html=True)
+        
+        # 2. Total Score
+        total_score = results.get('總分', 'N/A')
+        score_color = "#1d1d1f"
+        if isinstance(total_score, (int, float)):
+            if total_score >= 3.5: score_color = "#00c805"
+            elif total_score < 2: score_color = "#ff3b30"
+            
+        st.markdown(f"""
+            <div style="text-align: center; margin-bottom: 40px;">
+                <div style="font-size: 16px; color: #86868b; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;">Average Score</div>
+                <div style="font-size: 72px; font-weight: 700; color: {score_color}; line-height: 1.1;">{total_score}</div>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # 3. Six Metrics Grid
+        c1, c2, c3 = st.columns(3)
+        c4, c5, c6 = st.columns(3)
+        
+        metrics_map = [
+            ("Revenue", "月營收評分", c1),
+            ("OP Margin", "營業利益率評分", c2),
+            ("Net Profit", "淨利成長評分", c3),
+            ("EPS", "EPS評分", c4),
+            ("Inventory", "存貨周轉率評分", c5),
+            ("Cash Flow", "自由現金流評分", c6)
+        ]
+        
+        for label, key, col in metrics_map:
+            val = results.get(key, 'N/A')
+            col.metric(label, f"{val} / 4" if isinstance(val, (int, float)) else val)
+            
+        st.markdown('<div style="margin-top: 40px;"></div>', unsafe_allow_html=True)
+
+        # 4. Raw Data Tables (Split into 6 Tabs)
+        tabs = st.tabs(["Monthly Revenue", "Operating Margin", "Net Profit Growth", "EPS", "Inventory Turnover", "Free Cash Flow"])
+        
+        # Helper to format and display
+        def render_df(df, cols, rename_map, empty_msg):
+            if df is not None and not df.empty and all(c in df.columns for c in cols):
+                sub_df = df[cols].rename(columns=rename_map)
+                st.dataframe(sub_df, width='stretch', hide_index=True)
+            else:
+                st.info(empty_msg)
+
+        with tabs[0]: # Monthly Revenue
+            render_df(
+                raw_data.get('revenue'), 
+                ['date', 'revenue', 'yoy'], 
+                {'date': 'Month', 'revenue': 'Revenue (Million TWD)', 'yoy': 'YoY (%)'}, 
+                "No revenue data available."
+            )
+                
+        with tabs[1]: # Operating Margin
+            render_df(
+                raw_data.get('profitability'), 
+                ['quarter', '營業利益率'], 
+                {'quarter': 'Quarter', '營業利益率': 'Operating Margin (%)'}, 
+                "No operating margin data available."
+            )
+
+        with tabs[2]: # Net Profit Growth
+            render_df(
+                raw_data.get('profitability'), 
+                ['quarter', '稅後淨利成長率'], 
+                {'quarter': 'Quarter', '稅後淨利成長率': 'Net Profit Growth (%)'}, 
+                "No net profit growth data available."
+            )
+
+        with tabs[3]: # EPS
+            render_df(
+                raw_data.get('profitability'), 
+                ['quarter', '每股盈餘'], 
+                {'quarter': 'Quarter', '每股盈餘': 'EPS (TWD)'}, 
+                "No EPS data available."
+            )
+
+        with tabs[4]: # Inventory Turnover
+            render_df(
+                raw_data.get('profitability'), 
+                ['quarter', '存貨週轉率(次)'], 
+                {'quarter': 'Quarter', '存貨週轉率(次)': 'Inventory Turnover (Times)'}, 
+                "No inventory turnover data available."
+            )
+
+        with tabs[5]: # Free Cash Flow
+            render_df(
+                raw_data.get('cashflow'), 
+                ['quarter', 'fcf'], 
+                {'quarter': 'Quarter', 'fcf': 'Free Cash Flow (Million TWD)'}, 
+                "No cash flow data available."
+            )
