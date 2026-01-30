@@ -6,6 +6,7 @@ import random
 import numpy as np
 import urllib3
 import os
+from datetime import datetime
 from tqdm import tqdm
 from services import SQLiteHandler
 
@@ -518,6 +519,7 @@ def run_bulk_financial_analysis():
     """
     db_path = os.path.join('data', 'financial_scores.db')
     ticker_csv = os.path.join('data', 'stock_ticker.csv')
+    today_str = datetime.today().strftime('%Y-%m-%d')
     
     if not os.path.exists(ticker_csv):
         print(f"Error: {ticker_csv} not found.")
@@ -530,6 +532,7 @@ def run_bulk_financial_analysis():
     db_handler = SQLiteHandler(db_path)
     
     results = []
+    failed_stocks = []
     
     print(f"Starting bulk financial analysis for {len(tickers_df)} stocks...")
     
@@ -537,6 +540,14 @@ def run_bulk_financial_analysis():
         sid = row['代號']
         sname = row['名稱']
         list_date = row['list_date']
+        industry = row['industry']
+        
+        # 1. 過濾金融保險業 (因財報結構不同，暫不計算)
+        if industry == '金融保險業':
+            continue
+
+        # 2. Rate Limiting: 避免對伺服器造成過大負擔
+        time.sleep(random.uniform(0.2, 0.5))
         
         try:
             analysis = scorer.analyze_stock(sid)
@@ -544,10 +555,12 @@ def run_bulk_financial_analysis():
             # 檢查過濾條件 1: 如果有任何一項評分為 "無法評分" 則跳過
             score_keys = ['月營收評分', '營業利益率評分', '淨利成長評分', 'EPS評分', '存貨周轉率評分', '自由現金流評分']
             if any(analysis.get(k) == "無法評分" for k in score_keys):
+                failed_stocks.append(f"{sid} {sname}: Data insufficient or parse error")
                 continue
             
             # 檢查關鍵欄位是否存在
             if not analysis.get('營收月份') or not analysis.get('財報季度'):
+                failed_stocks.append(f"{sid} {sname}: Missing key metadata (revenue month or quarter)")
                 continue
 
             # 準備寫入資料庫的元組
@@ -572,12 +585,26 @@ def run_bulk_financial_analysis():
                 results = []
                 
         except Exception as e:
-            print(f"\nError processing {sid}: {e}")
+            failed_stocks.append(f"{sid} {sname}: {str(e)}")
             continue
 
     if results:
         db_handler.save_financial_scores(results)
-    print("\nBulk financial analysis completed.")
+        
+    # Logging
+    print("\n" + "="*30)
+    print(f"Financial Scoring completed on {today_str}")
+    print(f"Successfully processed: {len(tickers_df) - len(failed_stocks)}") # Note: This count includes skipped financials
+    print(f"Failed/Skipped: {len(failed_stocks)}")
+    
+    if failed_stocks:
+        print("\nFailed Stocks Log:")
+        # Limit log output if too long
+        for log in failed_stocks[:50]: 
+            print(log)
+        if len(failed_stocks) > 50:
+            print(f"... and {len(failed_stocks)-50} more.")
+    print("="*30)
 
 if __name__ == "__main__":
     choice = input("選擇模式: [1] 單一股票查詢 [2] 全台股批次更新: ")
