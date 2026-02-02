@@ -565,7 +565,7 @@ def run_bulk_financial_analysis():
 
             # 準備寫入資料庫的元組
             data_row = (
-                sid, sname, list_date,
+                sid, sname, list_date, industry,
                 analysis.get('財報季度'),
                 analysis.get('營收月份'),
                 analysis.get('月營收評分'),
@@ -624,15 +624,15 @@ if __name__ == "__main__":
         score_keys = ['月營收評分', '營業利益率評分', '淨利成長評分', 'EPS評分', '存貨周轉率評分', '自由現金流評分']
         if not any(results.get(k) == "無法評分" for k in score_keys) and results.get('營收月份'):
             ticker_csv = os.path.join('data', 'stock_ticker.csv')
-            stock_name, list_date = "未知", "未知"
+            stock_name, list_date, industry = "未知", "未知", "未知"
             if os.path.exists(ticker_csv):
                 df_tickers = pd.read_csv(ticker_csv)
                 match = df_tickers[df_tickers['代號'].astype(str) == str(stock_id)]
                 if not match.empty:
-                    stock_name, list_date = match.iloc[0]['名稱'], match.iloc[0]['list_date']
+                    stock_name, list_date, industry = match.iloc[0]['名稱'], match.iloc[0]['list_date'], match.iloc[0]['industry']
 
             data_row = (
-                str(stock_id), stock_name, list_date,
+                str(stock_id), stock_name, list_date, industry,
                 results.get('財報季度'), results.get('營收月份'),
                 results.get('月營收評分'), results.get('營業利益率評分'),
                 results.get('淨利成長評分'), results.get('EPS評分'),

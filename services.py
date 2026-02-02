@@ -279,6 +279,7 @@ class SQLiteHandler:
             stock_id TEXT NOT NULL,
             stock_name TEXT,
             上市櫃日期 TEXT,
+            產業類別 TEXT,
             財報季度 TEXT,
             營收月份 TEXT,
             營收年增率 REAL,
@@ -316,10 +317,10 @@ class SQLiteHandler:
         cursor = conn.cursor()
         sql = """
         INSERT OR IGNORE INTO stock_financial_scores (
-            stock_id, stock_name, 上市櫃日期, 財報季度, 營收月份,
+            stock_id, stock_name, 上市櫃日期, 產業類別, 財報季度, 營收月份,
             營收年增率, 營業利益率, 稅後淨利年增率, 每股盈餘EPS,
             存貨周轉率, 自由現金流量, 本期綜合評分, 綜合評分變化
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         try:
             cursor.executemany(sql, data_list)
