@@ -404,7 +404,9 @@ class FinancialScorer:
         else:
             yoy_series = df['yoy'].head(6).tolist()
 
-        if len(yoy_series) < (5 if is_cny else 6): return 0
+        target_len = 5 if is_cny else 6
+        if len(yoy_series) < target_len: return 0
+        if any(np.isnan(y) for y in yoy_series): return 0
         
         m0, m1, m2 = yoy_series[0], yoy_series[1], yoy_series[2]
         avg = sum(yoy_series) / len(yoy_series)
@@ -424,6 +426,10 @@ class FinancialScorer:
 
     def score_operating_profit_margin(self, margins):
         if not margins or len(margins) < 4: return 0
+        
+        # Check for NaN in the first 4 quarters
+        if any(np.isnan(x) for x in margins[:4]): return 0
+
         q0, q1, q2, q3 = margins[:4]
         avg = sum(margins[:4]) / 4
         
@@ -445,9 +451,10 @@ class FinancialScorer:
         return 2 if not history_stable else 2
 
     def score_net_profit_growth(self, rates):
-        if not rates or len(rates) < 3: return 0
-        q0, q1, q2 = rates[:3]
-        q3 = rates[3] if len(rates)>=4 else 0
+        if not rates or len(rates) < 4: return 0
+        if any(np.isnan(x) for x in rates[:4]): return 0
+
+        q0, q1, q2, q3 = rates[:4]
         
         neg_count = sum(1 for x in [q0,q1,q2,q3] if x < 0)
         is_big_drop = (q1 > 0 and (q1-q0)/q1 > 0.5)
@@ -464,6 +471,8 @@ class FinancialScorer:
 
     def score_eps(self, eps_list):
         if not eps_list or len(eps_list) < 4: return 0
+        if any(np.isnan(x) for x in eps_list[:4]): return 0
+
         q0 = eps_list[0]
         sum4q = sum(eps_list[:4])
         
@@ -490,6 +499,7 @@ class FinancialScorer:
         
         # 資料不足 (0分)
         if len(turnover_list) < 4: return 0
+        if any(np.isnan(x) for x in turnover_list[:4]): return 0
         
         q0, q1, q2, q3 = turnover_list[:4]
         avg = sum(turnover_list[:4]) / 4
@@ -504,6 +514,8 @@ class FinancialScorer:
 
     def score_fcf(self, fcf_list):
         if not fcf_list or len(fcf_list) < 6: return 0
+        if any(np.isnan(x) for x in fcf_list[:6]): return 0
+
         sum6q = sum(fcf_list[:6])
         sum4q = sum(fcf_list[:4])
         

@@ -316,7 +316,7 @@ class SQLiteHandler:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         sql = """
-        INSERT OR IGNORE INTO stock_financial_scores (
+        REPLACE INTO stock_financial_scores (
             stock_id, stock_name, 上市櫃日期, 產業類別, 財報季度, 營收月份,
             營收年增率, 營業利益率, 稅後淨利年增率, 每股盈餘EPS,
             存貨周轉率, 自由現金流量, 本期綜合評分, 綜合評分變化
