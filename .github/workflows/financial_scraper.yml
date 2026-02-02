@@ -2,6 +2,16 @@ name: Manual Financial Score Scraper
 
 on:
   workflow_dispatch:
+    inputs:
+      market:
+        description: 'Select Market to Scrape'
+        required: true
+        default: 'ALL'
+        type: choice
+        options:
+          - ALL
+          - TSE
+          - OTC
 
 jobs:
   scrape-financials:
@@ -23,16 +33,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: 4. Run financial scraper
-        run: python financial_scraper.py --auto
-
-      - name: 5. Commit and push database changes
+      - name: 4. Configure Git
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: 5. Run financial scraper
+        run: python financial_scraper.py --auto --market ${{ github.event.inputs.market }}
+
+      - name: 6. Commit and push database changes
+        if: always()
+        run: |
           git add data/financial_scores.db
           if ! git diff --staged --quiet; then
-            git commit -m "Update financial scores [$(date +'%Y-%m-%d')]"
+            git commit -m "Update financial scores (${{ github.event.inputs.market }}) [$(date +'%Y-%m-%d')]"
             git push
           else
             echo "No changes in database."

@@ -513,9 +513,10 @@ class FinancialScorer:
         if sum6q > 0 and sum4q <= 0: return 1
         return 0
 
-def run_bulk_financial_analysis():
+def run_bulk_financial_analysis(market_filter='ALL'):
     """
     執行財務報表評分分析，遍歷 stock_ticker.csv 中的所有股票。
+    market_filter: 'TSE' (上市), 'OTC' (上櫃), 'ALL' (全部)
     """
     db_path = os.path.join('data', 'financial_scores.db')
     ticker_csv = os.path.join('data', 'stock_ticker.csv')
@@ -527,6 +528,14 @@ def run_bulk_financial_analysis():
 
     tickers_df = pd.read_csv(ticker_csv)
     tickers_df['代號'] = tickers_df['代號'].astype(str)
+
+    # 根據市場進行過濾
+    if market_filter == 'TSE':
+        tickers_df = tickers_df[tickers_df['market'] == '上市']
+        print("Filtering for Listed stocks (TSE)...")
+    elif market_filter == 'OTC':
+        tickers_df = tickers_df[tickers_df['market'] == '上櫃']
+        print("Filtering for OTC stocks...")
     
     scorer = FinancialScorer()
     db_handler = SQLiteHandler(db_path)
@@ -611,16 +620,19 @@ import argparse
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Financial Scraper')
     parser.add_argument('--auto', action='store_true', help='Run in auto batch mode without user input')
+    parser.add_argument('--market', type=str, default='ALL', choices=['TSE', 'OTC', 'ALL'], help='Market filter: TSE, OTC, or ALL')
     args = parser.parse_args()
 
     if args.auto:
-        print("Auto mode detected. Starting bulk analysis...")
-        run_bulk_financial_analysis()
+        print(f"Auto mode detected (Market: {args.market}). Starting bulk analysis...")
+        run_bulk_financial_analysis(market_filter=args.market)
     else:
         choice = input("選擇模式: [1] 單一股票查詢 [2] 全台股批次更新: ")
         
         if choice == '1':
+            # ... (保持原本單一查詢邏輯)
             stock_id = input("請輸入台股股票代號 (例如 2330): ")
+            # ... (省略中間代碼以符合 replace 工具要求，我會提供完整區塊)
             scorer = FinancialScorer()
             print(f"\n開始分析 {stock_id} ...")
             start_time = time.time()
@@ -654,4 +666,8 @@ if __name__ == "__main__":
                 db_handler.save_financial_scores([data_row])
                 print(f"\n[成功] 已將 {stock_id} 的評分結果寫入資料庫。")
         else:
-            run_bulk_financial_analysis()
+            market_choice = input("選擇市場: [1] 全部 [2] 上市 (TSE) [3] 上櫃 (OTC): ")
+            m_filter = 'ALL'
+            if market_choice == '2': m_filter = 'TSE'
+            elif market_choice == '3': m_filter = 'OTC'
+            run_bulk_financial_analysis(market_filter=m_filter)
