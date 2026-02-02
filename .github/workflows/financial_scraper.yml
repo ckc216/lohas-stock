@@ -1,13 +1,10 @@
-name: Daily Lohas Score Scraper
+name: Manual Financial Score Scraper
 
 on:
   workflow_dispatch:
-  schedule:
-    # Runs at 14:00 UTC, which is 10 PM in Taiwan (UTC+8)
-    - cron: '0 14 * * *'
 
 jobs:
-  scrape-and-commit-scores:
+  scrape-financials:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -26,8 +23,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: 4. Run score scraper
-        run: python lohas_scraper.py
+      - name: 4. Run financial scraper
+        run: python financial_scraper.py --auto
 
       - name: 5. Commit and push database changes
         run: |
@@ -35,7 +32,7 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add data/financial_scores.db
           if ! git diff --staged --quiet; then
-            git commit -m "Update daily lohas scores [$(date +'%Y-%m-%d')]"
+            git commit -m "Update financial scores [$(date +'%Y-%m-%d')]"
             git push
           else
             echo "No changes in database."

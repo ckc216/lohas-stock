@@ -606,42 +606,52 @@ def run_bulk_financial_analysis():
             print(f"... and {len(failed_stocks)-50} more.")
     print("="*30)
 
+import argparse
+
 if __name__ == "__main__":
-    choice = input("選擇模式: [1] 單一股票查詢 [2] 全台股批次更新: ")
-    
-    if choice == '1':
-        stock_id = input("請輸入台股股票代號 (例如 2330): ")
-        scorer = FinancialScorer()
-        print(f"\n開始分析 {stock_id} ...")
-        start_time = time.time()
-        results = scorer.analyze_stock(stock_id)
-        
-        print(f"\n--- {stock_id} 分析結果 (耗時: {time.time()-start_time:.2f}秒) ---")
-        for k, v in results.items():
-            print(f"{k}: {v} 分" if isinstance(v, (int, float)) else f"{k}: {v}")
+    parser = argparse.ArgumentParser(description='Financial Scraper')
+    parser.add_argument('--auto', action='store_true', help='Run in auto batch mode without user input')
+    args = parser.parse_args()
 
-        # 單一查詢也嘗試寫入資料庫
-        score_keys = ['月營收評分', '營業利益率評分', '淨利成長評分', 'EPS評分', '存貨周轉率評分', '自由現金流評分']
-        if not any(results.get(k) == "無法評分" for k in score_keys) and results.get('營收月份'):
-            ticker_csv = os.path.join('data', 'stock_ticker.csv')
-            stock_name, list_date, industry = "未知", "未知", "未知"
-            if os.path.exists(ticker_csv):
-                df_tickers = pd.read_csv(ticker_csv)
-                match = df_tickers[df_tickers['代號'].astype(str) == str(stock_id)]
-                if not match.empty:
-                    stock_name, list_date, industry = match.iloc[0]['名稱'], match.iloc[0]['list_date'], match.iloc[0]['industry']
-
-            data_row = (
-                str(stock_id), stock_name, list_date, industry,
-                results.get('財報季度'), results.get('營收月份'),
-                results.get('月營收評分'), results.get('營業利益率評分'),
-                results.get('淨利成長評分'), results.get('EPS評分'),
-                results.get('存貨周轉率評分'), results.get('自由現金流評分'),
-                results.get('總分'), None
-            )
-            db_path = os.path.join('data', 'financial_scores.db')
-            db_handler = SQLiteHandler(db_path)
-            db_handler.save_financial_scores([data_row])
-            print(f"\n[成功] 已將 {stock_id} 的評分結果寫入資料庫。")
-    else:
+    if args.auto:
+        print("Auto mode detected. Starting bulk analysis...")
         run_bulk_financial_analysis()
+    else:
+        choice = input("選擇模式: [1] 單一股票查詢 [2] 全台股批次更新: ")
+        
+        if choice == '1':
+            stock_id = input("請輸入台股股票代號 (例如 2330): ")
+            scorer = FinancialScorer()
+            print(f"\n開始分析 {stock_id} ...")
+            start_time = time.time()
+            results = scorer.analyze_stock(stock_id)
+            
+            print(f"\n--- {stock_id} 分析結果 (耗時: {time.time()-start_time:.2f}秒) ---")
+            for k, v in results.items():
+                print(f"{k}: {v} 分" if isinstance(v, (int, float)) else f"{k}: {v}")
+
+            # 單一查詢也嘗試寫入資料庫
+            score_keys = ['月營收評分', '營業利益率評分', '淨利成長評分', 'EPS評分', '存貨周轉率評分', '自由現金流評分']
+            if not any(results.get(k) == "無法評分" for k in score_keys) and results.get('營收月份'):
+                ticker_csv = os.path.join('data', 'stock_ticker.csv')
+                stock_name, list_date, industry = "未知", "未知", "未知"
+                if os.path.exists(ticker_csv):
+                    df_tickers = pd.read_csv(ticker_csv)
+                    match = df_tickers[df_tickers['代號'].astype(str) == str(stock_id)]
+                    if not match.empty:
+                        stock_name, list_date, industry = match.iloc[0]['名稱'], match.iloc[0]['list_date'], match.iloc[0]['industry']
+
+                data_row = (
+                    str(stock_id), stock_name, list_date, industry,
+                    results.get('財報季度'), results.get('營收月份'),
+                    results.get('月營收評分'), results.get('營業利益率評分'),
+                    results.get('淨利成長評分'), results.get('EPS評分'),
+                    results.get('存貨周轉率評分'), results.get('自由現金流評分'),
+                    results.get('總分'), None
+                )
+                db_path = os.path.join('data', 'financial_scores.db')
+                db_handler = SQLiteHandler(db_path)
+                db_handler.save_financial_scores([data_row])
+                print(f"\n[成功] 已將 {stock_id} 的評分結果寫入資料庫。")
+        else:
+            run_bulk_financial_analysis()
