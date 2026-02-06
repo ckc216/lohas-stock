@@ -330,3 +330,16 @@ class SQLiteHandler:
         finally:
             conn.close()
 
+    def get_financial_history(self, stock_id: str) -> pd.DataFrame:
+        """Fetch historical financial scores for a specific stock"""
+        conn = sqlite3.connect(self.db_path)
+        try:
+            query = "SELECT * FROM stock_financial_scores WHERE stock_id = ? ORDER BY 營收月份 DESC"
+            df = pd.read_sql_query(query, conn, params=(str(stock_id),))
+            return df
+        except Exception as e:
+            print(f"Error fetching financial history: {e}")
+            return pd.DataFrame()
+        finally:
+            conn.close()
+

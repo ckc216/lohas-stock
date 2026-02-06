@@ -442,7 +442,7 @@ class AppView:
         st.plotly_chart(fig, width='stretch')
 
     @staticmethod
-    def render_financial_dashboard(ticker: str, stock_name: str, results: dict, raw_data: dict):
+    def render_financial_dashboard(ticker: str, stock_name: str, results: dict, raw_data: dict, history_df: pd.DataFrame = None):
         """Render the Six-Index Scores dashboard"""
         
         # 1. Info Header (Ticker & Dates)
@@ -511,7 +511,7 @@ class AppView:
             render_df(
                 raw_data.get('revenue'), 
                 ['date', 'revenue', 'yoy'], 
-                {'date': 'Month', 'revenue': 'Revenue (Million TWD)', 'yoy': 'YoY (%)'}, 
+                {'date': 'Month', 'revenue': 'Revenue (Thousand TWD)', 'yoy': 'YoY (%)'}, 
                 "No revenue data available."
             )
                 
@@ -554,3 +554,79 @@ class AppView:
                 {'quarter': 'Quarter', 'fcf': 'Free Cash Flow (Million TWD)'}, 
                 "No cash flow data available."
             )
+
+        # 5. Historical Analysis Section
+        if history_df is not None and not history_df.empty:
+            st.markdown('<div style="margin-top: 60px;"></div>', unsafe_allow_html=True)
+            st.markdown('<p class="sub-title">Historical Performance Analysis</p>', unsafe_allow_html=True)
+            
+            # 確保日期排序正確 (舊 -> 新) 供繪圖
+            hist_plot = history_df.sort_values('營收月份')
+            
+            # Trend Chart
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=hist_plot['營收月份'], 
+                y=hist_plot['本期綜合評分'],
+                mode='lines+markers',
+                name='Total Score',
+                line=dict(color='#0071e3', width=3),
+                marker=dict(size=8, color='#ffffff', line=dict(width=2, color='#0071e3')),
+                hovertemplate="Score: %{y:.2f}<extra></extra>"
+            ))
+            
+            fig.update_layout(
+                title={'text': 'Total Score Trend', 'font': {'size': 18, 'color': '#1d1d1f'}},
+                showlegend=False, 
+                plot_bgcolor='white', 
+                paper_bgcolor='white',
+                margin=dict(l=20, r=20, t=40, b=20),
+                xaxis=dict(
+                    type='category', # 強制使用類別型，只顯示字串日期
+                    showgrid=False, 
+                    tickfont=dict(color='#86868b')
+                ),
+                yaxis=dict(showgrid=True, gridcolor='#f5f5f7', range=[0, 4.2], tickfont=dict(color='#86868b')),
+                hovermode="x unified"
+            )
+            st.plotly_chart(fig, width='stretch')
+            
+            # Historical Data Table
+            st.markdown('<div style="margin-top: 20px;"></div>', unsafe_allow_html=True)
+            with st.expander("View Historical Data Table", expanded=True):
+                # 選擇並重新命名欄位以供顯示
+                display_cols = [
+                    '營收月份', '財報季度', '本期綜合評分', 
+                    '營收年增率', '營業利益率', '稅後淨利年增率', 
+                    '每股盈餘EPS', '存貨周轉率', '自由現金流量'
+                ]
+                rename_map = {
+                    '營收月份': 'Month', 
+                    '財報季度': 'Quarter',
+                    '本期綜合評分': 'Total Score',
+                    '營收年增率': 'Rev Score', 
+                    '營業利益率': 'OP Margin Score',
+                    '稅後淨利年增率': 'Net Profit Score', 
+                    '每股盈餘EPS': 'EPS Score',
+                    '存貨周轉率': 'Inv Score', 
+                    '自由現金流量': 'FCF Score'
+                }
+                
+                # 處理欄位可能不存在的情況 (防禦性程式設計)
+                avail_cols = [c for c in display_cols if c in history_df.columns]
+                final_hist_df = history_df[avail_cols].rename(columns=rename_map)
+                
+                # 使用 column_config 調整對齊與格式
+                column_config = {
+                    "Month": st.column_config.TextColumn("Month"),
+                    "Quarter": st.column_config.TextColumn("Quarter"),
+                    "Total Score": st.column_config.NumberColumn("Total Score", format="%.2f"),
+                    "Rev Score": st.column_config.NumberColumn("Rev Score"),
+                    "OP Margin Score": st.column_config.NumberColumn("OP Margin Score"),
+                    "Net Profit Score": st.column_config.NumberColumn("Net Profit Score"),
+                    "EPS Score": st.column_config.NumberColumn("EPS Score"),
+                    "Inv Score": st.column_config.NumberColumn("Inv Score", help="Inventory Score"),
+                    "FCF Score": st.column_config.NumberColumn("FCF Score"),
+                }
+                
+                st.dataframe(final_hist_df, width='stretch', hide_index=True, column_config=column_config)

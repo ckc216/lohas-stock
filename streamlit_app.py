@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-from services import YFinanceService, LohasService, EconomyService
+import os
+from services import YFinanceService, LohasService, EconomyService, SQLiteHandler
 from view import AppView
 from financial_scraper import FinancialScorer
 
@@ -9,6 +10,7 @@ yfinance_service = YFinanceService()
 lohas_service = LohasService()
 economy_service = EconomyService()
 financial_scorer = FinancialScorer()
+sqlite_handler = SQLiteHandler(os.path.join('data', 'financial_scores.db'))
 app_view = AppView()
 
 # --- Cached Data Fetching ---
@@ -102,9 +104,20 @@ elif current_page == "financials_six_index":
             display_name = f"{stock_name} ({ticker})" if stock_name and stock_name != ticker else ticker
             with st.spinner(f'Analyzing Financial Data for {display_name}...'):
                 try:
+                    # 1. Real-time Analysis
                     results, raw_data = financial_scorer.analyze_stock_detailed(ticker)
+                    
+                    # 2. Historical Data from DB
+                    history_df = sqlite_handler.get_financial_history(ticker)
+                    
                     if results and results.get('總分') != "無法評分":
-                        AppView.render_financial_dashboard(ticker, stock_name if stock_name else ticker, results, raw_data)
+                        AppView.render_financial_dashboard(
+                            ticker, 
+                            stock_name if stock_name else ticker, 
+                            results, 
+                            raw_data, 
+                            history_df
+                        )
                     else:
                         st.error(f"Could not retrieve sufficient financial data for {display_name}. Please check if the stock is listed on TWSE/TPEx.")
                 except Exception as e:
