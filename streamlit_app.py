@@ -10,7 +10,7 @@ yfinance_service = YFinanceService()
 lohas_service = LohasService()
 economy_service = EconomyService()
 financial_scorer = FinancialScorer()
-sqlite_handler = SQLiteHandler(os.path.join('data', 'financial_scores.db'))
+sqlite_handler = SQLiteHandler() # Uses default DB_PATH
 app_view = AppView()
 
 # --- Cached Data Fetching ---
