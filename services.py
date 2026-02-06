@@ -343,3 +343,42 @@ class SQLiteHandler:
         finally:
             conn.close()
 
+    def get_financial_overview(self) -> pd.DataFrame:
+        """Fetch the latest financial scores and lohas levels for all stocks"""
+        conn = sqlite3.connect(self.db_path)
+        try:
+            # 使用 ROW_NUMBER() 取得每檔股票最新的一筆財報資料，並 JOIN 樂活等級
+            query = """
+            WITH LatestFinancials AS (
+                SELECT *,
+                       ROW_NUMBER() OVER (PARTITION BY stock_id ORDER BY 營收月份 DESC) as rn
+                FROM stock_financial_scores
+            )
+            SELECT 
+                f.stock_id AS 代號,
+                f.stock_name AS 名稱,
+                f.產業類別 AS 產業,
+                f.上市櫃日期 AS 上市日期,
+                f.財報季度 AS 財報季度,
+                f.營收月份 AS 營收月份,
+                f.本期綜合評分 AS 總分,
+                l.level AS 樂活五線譜,
+                f.營收年增率 AS 月營收評分,
+                f.營業利益率 AS 營業利益率評分,
+                f.稅後淨利年增率 AS 淨利成長評分,
+                f.每股盈餘EPS AS EPS評分,
+                f.存貨周轉率 AS 存貨周轉率評分,
+                f.自由現金流量 AS 自由現金流量評分
+            FROM LatestFinancials f
+            LEFT JOIN stock_price_trend_lines l ON f.stock_id = l.stock_id
+            WHERE f.rn = 1
+            ORDER BY f.stock_id ASC
+            """
+            df = pd.read_sql_query(query, conn)
+            return df
+        except Exception as e:
+            print(f"Error fetching financial overview: {e}")
+            return pd.DataFrame()
+        finally:
+            conn.close()
+

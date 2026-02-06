@@ -26,6 +26,10 @@ def fetch_data_cached(ticker: str, market: str = None):
 def get_all_scores_cached():
     return yfinance_service.get_all_scores()
 
+@st.cache_data(ttl=3600)
+def get_financial_overview_cached():
+    return sqlite_handler.get_financial_overview()
+
 @st.cache_data(ttl=600)
 def get_fear_greed_data_cached():
     return EconomyService.fetch_fear_greed_index()
@@ -38,8 +42,11 @@ current_page = query_params.get("page", "individual")
 # --- UI Setup ---
 AppView.setup_page()
 AppView.render_apple_nav()
-if current_page != "economy":
-    AppView.render_header()
+
+# --- Global Header Logic ---
+if current_page not in ["economy", "financials_overview"]:
+    subtitle = "Six-Index Analysis Tools" if current_page == "financials_six_index" else "Advanced LOHAS Analysis Tools"
+    AppView.render_header(subtitle)
 
 # --- Content Routing ---
 if current_page == "individual":
@@ -74,6 +81,11 @@ elif current_page == "dashboard":
     with st.spinner('Loading Market Overview...'):
         df_all = get_all_scores_cached()
         AppView.render_market_dashboard(df_all)
+
+elif current_page == "financials_overview":
+    with st.spinner('Loading Financials Overview...'):
+        df_ov = get_financial_overview_cached()
+        AppView.render_financial_overview(df_ov)
 
 elif current_page == "financials_six_index":
     target = AppView.render_search_input()

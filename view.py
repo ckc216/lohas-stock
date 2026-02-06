@@ -200,6 +200,7 @@ class AppView:
                         <a class="nav-link" href="#"><span>💰</span> Financials</a>
                         <div class="dropdown-menu">
                              <a href="?page=financials_six_index" target="_self" class="dropdown-item">Six-Index Scores</a>
+                             <a href="?page=financials_overview" target="_self" class="dropdown-item">Financials Overview</a>
                         </div>
                     </li>
                     <li class="nav-item">
@@ -214,10 +215,10 @@ class AppView:
         """, unsafe_allow_html=True)
 
     @staticmethod
-    def render_header():
+    def render_header(subtitle="Advanced LOHAS Analysis Tools"):
         """Render the hero section"""
         st.markdown('<p class="main-title">Stock Intelligence.</p>', unsafe_allow_html=True)
-        st.markdown('<p class="sub-title">Advanced LOHAS Analysis Tools</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="sub-title">{subtitle}</p>', unsafe_allow_html=True)
     
     @staticmethod
     def render_search_input() -> str:
@@ -328,6 +329,57 @@ class AppView:
             "+2SD": st.column_config.NumberColumn("+2SD", format="%.2f"),
         }
         st.dataframe(final_df, width='stretch', height=600, hide_index=True, column_config=column_config)
+
+    @staticmethod
+    def render_financial_overview(df: pd.DataFrame):
+        """Render the Financials Overview table"""
+        st.markdown('<p class="main-title">Financials Overview.</p>', unsafe_allow_html=True)
+        st.markdown('<p class="sub-title">Latest Financial Scores & Lohas Levels</p>', unsafe_allow_html=True)
+        
+        if df.empty:
+            st.info("No financial data available.")
+            return
+
+        # 搜尋功能
+        _, col, _ = st.columns([1, 2, 1])
+        with col:
+            search_query = st.text_input("Search Overview", placeholder="Search Company Name or ID...", label_visibility="collapsed")
+        
+        filtered_df = df.copy()
+        if search_query:
+            filtered_df = filtered_df[
+                filtered_df['代號'].astype(str).str.contains(search_query) | 
+                filtered_df['名稱'].str.contains(search_query)
+            ]
+
+        # 處理 樂活五線譜 (Level) 轉為整數並處理缺失值
+        # 我們使用 map 來處理顯示，這不會改變原始資料類型，但會讓渲染更漂亮
+        display_df = filtered_df.copy()
+        
+        # 處理 Level 的顯示
+        display_df['樂活五線譜'] = display_df['樂活五線譜'].apply(
+            lambda x: str(int(x)) if pd.notnull(x) else "-"
+        )
+
+        column_config = {
+            "代號": st.column_config.TextColumn("代號"),
+            "名稱": st.column_config.TextColumn("名稱"),
+            "總分": st.column_config.NumberColumn("總分", format="%.2f"),
+            "月營收評分": st.column_config.NumberColumn("月營收評分"),
+            "營業利益率評分": st.column_config.NumberColumn("營業利益率評分"),
+            "淨利成長評分": st.column_config.NumberColumn("淨利成長評分"),
+            "EPS評分": st.column_config.NumberColumn("EPS評分"),
+            "存貨周轉率評分": st.column_config.TextColumn("存貨周轉率評分"),
+            "自由現金流評分": st.column_config.NumberColumn("自由現金流評分"),
+        }
+
+        st.dataframe(
+            display_df, 
+            width='stretch', 
+            height=650, 
+            hide_index=True, 
+            column_config=column_config
+        )
 
     @staticmethod
     def render_economy_page(data: dict):
