@@ -190,10 +190,9 @@ class AppView:
             <div class="apple-nav">
                 <ul class="nav-list">
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><span>♫</span> LOHAS Five-Line</a>
+                        <a class="nav-link" href="#"><span>📊</span> Technical</a>
                         <div class="dropdown-menu">
-                            <a href="?page=individual" target="_self" class="dropdown-item">Stock Insights</a>
-                            <a href="?page=dashboard" target="_self" class="dropdown-item">Market Overview</a>
+                            <a href="?page=individual" target="_self" class="dropdown-item">LOHAS Five-Line</a>
                         </div>
                     </li>
                     <li class="nav-item">
@@ -292,43 +291,6 @@ class AppView:
                 <p style="margin: 8px 0 0 0; font-size: 14px; color: #86868b;">Check the ticker symbol or company name.</p>
             </div>
         """, unsafe_allow_html=True)
-
-    @staticmethod
-    def render_market_dashboard(df: pd.DataFrame):
-        if df.empty:
-            st.info("No data available in the dashboard.")
-            return
-        last_date = df['date'].iloc[0] if 'date' in df.columns else "Unknown"
-        st.markdown(f'<p style="text-align: right; color: #86868b; font-size: 12px; margin-bottom: 5px;">Global Snapshot: {last_date}</p>', unsafe_allow_html=True)
-        
-        _, col, _ = st.columns([1, 2, 1])
-        with col:
-            search_query = st.text_input("Search...", placeholder="Search company name or ID...", label_visibility="collapsed")
-        
-        filtered_df = df.copy()
-        if search_query:
-            filtered_df = filtered_df[filtered_df['stock_id'].astype(str).str.contains(search_query) | filtered_df['stock_name'].str.contains(search_query)]
-        
-        display_cols = ['stock_id', 'stock_name', 'level', 'close_price', 'lower_2sd', 'lower_1sd', 'trend_line', 'upper_1sd', 'upper_2sd']
-        rename_map = {
-            'lower_2sd': '-2SD',
-            'lower_1sd': '-1SD',
-            'upper_1sd': '+1SD',
-            'upper_2sd': '+2SD'
-        }
-        
-        final_df = filtered_df[display_cols].rename(columns=rename_map)
-        
-        column_config = {
-            "level": st.column_config.NumberColumn("level", format="%d"),
-            "close_price": st.column_config.NumberColumn("close_price", format="%.2f"),
-            "trend_line": st.column_config.NumberColumn("trend_line", format="%.2f"),
-            "-2SD": st.column_config.NumberColumn("-2SD", format="%.2f"),
-            "-1SD": st.column_config.NumberColumn("-1SD", format="%.2f"),
-            "+1SD": st.column_config.NumberColumn("+1SD", format="%.2f"),
-            "+2SD": st.column_config.NumberColumn("+2SD", format="%.2f"),
-        }
-        st.dataframe(final_df, width='stretch', height=600, hide_index=True, column_config=column_config)
 
     @staticmethod
     def render_financial_overview(df: pd.DataFrame):

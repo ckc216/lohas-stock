@@ -23,10 +23,6 @@ def fetch_data_cached(ticker: str, market: str = None):
     return yfinance_service.fetch_data(ticker, market)
 
 @st.cache_data(ttl=3600)
-def get_all_scores_cached():
-    return yfinance_service.get_all_scores()
-
-@st.cache_data(ttl=3600)
 def get_financial_overview_cached():
     return sqlite_handler.get_financial_overview()
 
@@ -76,11 +72,6 @@ if current_page == "individual":
                 AppView.render_not_found_message(target)
     else:
         st.markdown('<p style="text-align: center; color: #86868b; margin-top: 20px;">Enter a stock ticker or name to begin depth analysis.</p>', unsafe_allow_html=True)
-
-elif current_page == "dashboard":
-    with st.spinner('Loading Market Overview...'):
-        df_all = get_all_scores_cached()
-        AppView.render_market_dashboard(df_all)
 
 elif current_page == "financials_overview":
     with st.spinner('Loading Financials Overview...'):

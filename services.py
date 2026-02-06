@@ -100,21 +100,6 @@ class YFinanceService:
                         time.sleep(1)
         return None
 
-    def get_all_scores(self) -> pd.DataFrame:
-        """Fetch all calculated scores from SQLite database"""
-        db_path = os.path.join('data', 'financial_scores.db')
-        if not os.path.exists(db_path):
-            return pd.DataFrame()
-            
-        try:
-            conn = sqlite3.connect(db_path)
-            df = pd.read_sql_query("SELECT * FROM stock_price_trend_lines", conn)
-            conn.close()
-            return df
-        except Exception as e:
-            print(f"Error reading database: {e}")
-            return pd.DataFrame()
-
 
 class LohasService:
     """Responsible for LOHAS 5-Lines and Channel analysis calculations"""
@@ -276,12 +261,12 @@ class SQLiteHandler:
         # 建立財務評價資料表
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS stock_financial_scores (
-            stock_id TEXT NOT NULL,
+            stock_id NOT NULL,
             stock_name TEXT,
             上市櫃日期 TEXT,
             產業類別 TEXT,
             財報季度 TEXT,
-            營收月份 TEXT,
+            營營月份 TEXT,
             營收年增率 REAL,
             營業利益率 REAL,
             稅後淨利年增率 REAL,
@@ -381,4 +366,3 @@ class SQLiteHandler:
             return pd.DataFrame()
         finally:
             conn.close()
-
