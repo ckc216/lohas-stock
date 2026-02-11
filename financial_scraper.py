@@ -6,7 +6,7 @@ import random
 import numpy as np
 import urllib3
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from tqdm import tqdm
 from services import SQLiteHandler, DB_PATH
 
@@ -284,9 +284,34 @@ def run_bulk_financial_analysis(market_filter='ALL'):
             analysis = scorer.analyze_stock(sid)
             keys = ['月營收評分', '營業利益率評分', '淨利成長評分', 'EPS評分', '存貨周轉率評分', '自由現金流評分']
             if any(analysis.get(k) == "無法評分" for k in keys) or not analysis.get('營收月份'): continue
+            
+            score_diff = None
+            current_score = analysis.get('總分')
+            current_month_str = analysis.get('營收月份')
+
+            if current_month_str and isinstance(current_score, (int, float)):
+                try:
+                    # Calculate previous month string (e.g., '2026-01' -> '2025-12')
+                    y, m = map(int, current_month_str.split('-'))
+                    prev_date = datetime(y, m, 1) - timedelta(days=1)
+                    prev_month_str = f"{prev_date.year}-{prev_date.month:02d}"
+
+                    # Fetch history to find previous score
+                    history = handler.get_financial_history(sid)
+                    if not history.empty:
+                        prev_record = history[history['營收月份'] == prev_month_str]
+                        if not prev_record.empty:
+                            prev_score = prev_record.iloc[0]['本期綜合評分']
+                            if isinstance(prev_score, (int, float)):
+                                score_diff = round(current_score - float(prev_score), 2)
+                except Exception:
+                    pass
+
             results.append((sid, sname, ldate, ind, analysis.get('財報季度'), analysis.get('營收月份'), 
                             analysis.get('月營收評分'), analysis.get('營業利益率評分'), analysis.get('淨利成長評分'), 
-                            analysis.get('EPS評分'), analysis.get('存貨周轉率評分'), analysis.get('自由現金流評分'), analysis.get('總分'), None))
+                            analysis.get('EPS評分'), analysis.get('存貨周轉率評分'), analysis.get('自由現金流評分'), 
+                            current_score, score_diff))
+            
             if len(results) >= 20:
                 handler.save_financial_scores(results); results = []
         except: continue
