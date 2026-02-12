@@ -607,40 +607,43 @@ class AppView:
             
             # Historical Data Table
             st.markdown('<div style="margin-top: 20px;"></div>', unsafe_allow_html=True)
-            with st.expander("View Historical Data Table", expanded=True):
-                # 選擇並重新命名欄位以供顯示
-                display_cols = [
-                    '營收月份', '財報季度', '本期綜合評分', 
-                    '營收年增率', '營業利益率', '稅後淨利年增率', 
-                    '每股盈餘EPS', '存貨周轉率', '自由現金流量'
-                ]
-                rename_map = {
-                    '營收月份': 'Month', 
-                    '財報季度': 'Quarter',
-                    '本期綜合評分': 'Total Score',
-                    '營收年增率': 'Rev Score', 
-                    '營業利益率': 'OP Margin Score',
-                    '稅後淨利年增率': 'Net Profit Score', 
-                    '每股盈餘EPS': 'EPS Score',
-                    '存貨周轉率': 'Inv Score', 
-                    '自由現金流量': 'FCF Score'
-                }
-                
-                # 處理欄位可能不存在的情況 (防禦性程式設計)
-                avail_cols = [c for c in display_cols if c in history_df.columns]
-                final_hist_df = history_df[avail_cols].rename(columns=rename_map)
-                
-                # 使用 column_config 調整對齊與格式
-                column_config = {
-                    "Month": st.column_config.TextColumn("Month"),
-                    "Quarter": st.column_config.TextColumn("Quarter"),
-                    "Total Score": st.column_config.NumberColumn("Total Score", format="%.2f"),
-                    "Rev Score": st.column_config.NumberColumn("Rev Score"),
-                    "OP Margin Score": st.column_config.NumberColumn("OP Margin Score"),
-                    "Net Profit Score": st.column_config.NumberColumn("Net Profit Score"),
-                    "EPS Score": st.column_config.NumberColumn("EPS Score"),
-                    "Inv Score": st.column_config.NumberColumn("Inv Score", help="Inventory Score"),
-                    "FCF Score": st.column_config.NumberColumn("FCF Score"),
-                }
-                
-                st.dataframe(final_hist_df, width='stretch', hide_index=True, column_config=column_config)
+            st.markdown('<p style="font-size: 18px; font-weight: bold; color: #1d1d1f; margin-bottom: 10px;">Historical Data Table</p>', unsafe_allow_html=True)
+            
+            # 選擇並重新命名欄位以供顯示
+            display_cols = [
+                '營收月份', '財報季度', '本期綜合評分', '綜合評分變化',
+                '營收年增率', '營業利益率', '稅後淨利年增率', 
+                '每股盈餘EPS', '存貨周轉率', '自由現金流量'
+            ]
+            rename_map = {
+                '營收月份': 'Month', 
+                '財報季度': 'Quarter',
+                '本期綜合評分': 'Total Score',
+                '綜合評分變化': 'Change',
+                '營收年增率': 'Rev Score', 
+                '營業利益率': 'OP Margin Score',
+                '稅後淨利年增率': 'Net Profit Score', 
+                '每股盈餘EPS': 'EPS Score',
+                '存貨周轉率': 'Inv Score',
+                '自由現金流量': 'FCF Score'
+            }
+            
+            # 處理欄位可能不存在的情況 (防禦性程式設計)
+            avail_cols = [c for c in display_cols if c in history_df.columns]
+            final_hist_df = history_df[avail_cols].rename(columns=rename_map)
+            
+            # 使用 column_config 調整對齊與格式
+            column_config = {
+                "Month": st.column_config.TextColumn("Month"),
+                "Quarter": st.column_config.TextColumn("Quarter"),
+                "Total Score": st.column_config.NumberColumn("Total Score", format="%.2f"),
+                "Change": st.column_config.NumberColumn("Change", format="%+.2f"),
+                "Rev Score": st.column_config.NumberColumn("Rev Score"),
+                "OP Margin Score": st.column_config.NumberColumn("OP Margin Score"),
+                "Net Profit Score": st.column_config.NumberColumn("Net Profit Score"),
+                "EPS Score": st.column_config.NumberColumn("EPS Score"),
+                "Inv Score": st.column_config.NumberColumn("Inv Score", help="Inventory Score"),
+                "FCF Score": st.column_config.NumberColumn("FCF Score"),
+            }
+            
+            st.dataframe(final_hist_df, width='stretch', hide_index=True, column_config=column_config)
