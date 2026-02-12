@@ -456,7 +456,7 @@ class AppView:
         st.plotly_chart(fig, width='stretch')
 
     @staticmethod
-    def render_financial_dashboard(ticker: str, stock_name: str, results: dict, raw_data: dict, history_df: pd.DataFrame = None):
+    def render_financial_dashboard(ticker: str, stock_name: str, results: dict, raw_data: dict, history_df: pd.DataFrame = None, lohas_bundle: dict = None):
         """Render the Six-Index Scores dashboard"""
         
         # 1. Info Header (Ticker & Dates)
@@ -568,6 +568,16 @@ class AppView:
                 {'quarter': 'Quarter', 'fcf': 'Free Cash Flow (Million TWD)'}, 
                 "No cash flow data available."
             )
+
+        # 5. Integrated LOHAS Charts
+        if lohas_bundle:
+            st.markdown('<div style="margin-top: 40px;"></div>', unsafe_allow_html=True)
+            st.markdown('<p class="sub-title">Lohas Technical Analysis</p>', unsafe_allow_html=True)
+            l_tab1, l_tab2 = st.tabs(["Lohas 5-Lines", "Lohas Channel"])
+            with l_tab1:
+                AppView.render_five_lines_chart(lohas_bundle['stock_data'], lohas_bundle['five_lines_data'])
+            with l_tab2:
+                AppView.render_channel_chart(lohas_bundle['stock_data'], lohas_bundle['channel_data'])
 
         # 5. Historical Analysis Section
         if history_df is not None and not history_df.empty:

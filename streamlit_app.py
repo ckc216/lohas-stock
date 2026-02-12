@@ -107,11 +107,26 @@ elif current_page == "financials_six_index":
             display_name = f"{stock_name} ({ticker})" if stock_name and stock_name != ticker else ticker
             with st.spinner(f'Analyzing Financial Data for {display_name}...'):
                 try:
-                    # 1. Real-time Analysis
+                    # 1. Real-time Financial Analysis
                     results, raw_data = financial_scorer.analyze_stock_detailed(ticker)
                     
                     # 2. Historical Data from DB
                     history_df = sqlite_handler.get_financial_history(ticker)
+
+                    # 3. LOHAS Data for Integrated View
+                    lohas_bundle = None
+                    info = get_stock_info_cached(ticker)
+                    if info:
+                        stock_data = fetch_data_cached(info['id'], info['market'])
+                        if stock_data is not None:
+                            stock_data = LohasService.prepare_data(stock_data)
+                            five_lines_data = LohasService.calculate_five_lines(stock_data)
+                            channel_data = LohasService.calculate_channel(stock_data)
+                            lohas_bundle = {
+                                'stock_data': stock_data,
+                                'five_lines_data': five_lines_data,
+                                'channel_data': channel_data
+                            }
                     
                     if results and results.get('總分') != "無法評分":
                         AppView.render_financial_dashboard(
@@ -119,7 +134,8 @@ elif current_page == "financials_six_index":
                             stock_name if stock_name else ticker, 
                             results, 
                             raw_data, 
-                            history_df
+                            history_df,
+                            lohas_bundle
                         )
                     else:
                         st.error(f"Could not retrieve sufficient financial data for {display_name}. Please check if the stock is listed on TWSE/TPEx.")
