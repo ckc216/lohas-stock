@@ -198,14 +198,14 @@ class FinancialScorer:
                 c1, c2 = df[df['month']==1]['revenue'].iloc[0], df[df['month']==2]['revenue'].iloc[0]
                 p1, p2 = df[(df['year']==latest['year']-1) & (df['month']==1)]['revenue'].iloc[0], df[(df['year']==latest['year']-1) & (df['month']==2)]['revenue'].iloc[0]
                 yoy_series.append(((c1+c2)-(p1+p2))/(p1+p2)*100 if (p1+p2)!=0 else 0)
-                needed = 4
+                needed = 5
                 for _, r in df.iterrows():
                     if needed == 0: break
                     if r['year'] == latest['year'] and r['month'] >= 1: continue
                     yoy_series.append(r['yoy']); needed -= 1
             except: return 0
         else: yoy_series = df['yoy'].head(6).tolist()
-        if len(yoy_series) < (5 if latest['month']==2 else 6): return 0
+        if len(yoy_series) < 6: return 0
         m0, m1, m2 = yoy_series[0], yoy_series[1], yoy_series[2]
         avg = sum(yoy_series)/len(yoy_series)
         if avg < 0 or m0 < 0: return 0
