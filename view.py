@@ -1,659 +1,986 @@
 """
-Streamlit UI Components for Stock Analysis - Apple Premium Style
+Streamlit UI components for the stock analysis dashboard.
 """
-import streamlit as st
+from __future__ import annotations
+
+import html
+from typing import Any
+
 import pandas as pd
 import plotly.graph_objects as go
-from datetime import datetime
+import streamlit as st
 
 
 class AppView:
-    """Responsible for Streamlit UI rendering with Apple Design Language"""
-    
+    """Render Streamlit screens with a restrained, consistent visual system."""
+
+    TEXT = "#1d1d1f"
+    MUTED = "#6e6e73"
+    SUBTLE = "#86868b"
+    BORDER = "#d8d8de"
+    PANEL = "#f5f5f7"
+    BLUE = "#0071e3"
+    GREEN = "#16a34a"
+    RED = "#d92d20"
+    AMBER = "#b7791f"
+
     @staticmethod
     def setup_page():
-        """Configure Streamlit page settings and premium styling"""
         st.set_page_config(page_title="Stock Intelligence", layout="wide", initial_sidebar_state="collapsed")
-        
-        # Apple Global CSS
-        st.markdown("""
+        st.markdown(
+            """
             <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
-            
-            /* 全域背景與字體 */
-            .stApp { background-color: #ffffff; color: #1d1d1f; }
-            html, body, [class*="css"] { font-family: 'Inter', -apple-system, sans-serif; }
-            
-            /* 隱藏 Streamlit 預設標頭 */
-            header { visibility: hidden; height: 0px; }
-            [data-testid="stHeader"] { display: none; }
-            .stAppHeader { display: none; }
-            
-            /* Apple Style Global Nav Bar */
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+            :root {
+                --text: #1d1d1f;
+                --muted: #6e6e73;
+                --subtle: #86868b;
+                --border: #d8d8de;
+                --panel: #f5f5f7;
+                --panel-strong: #ececf1;
+                --blue: #0071e3;
+            }
+
+            html, body, [class*="css"], .stApp {
+                font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                color: var(--text);
+                background: #ffffff;
+            }
+
+            header, [data-testid="stHeader"], .stAppHeader { display: none; }
+            .block-container {
+                max-width: 1120px;
+                padding: 76px 32px 56px !important;
+            }
+
             .apple-nav {
                 position: fixed;
-                top: 0; left: 0; right: 0;
-                height: 48px;
-                background: rgba(255, 255, 255, 0.9);
-                backdrop-filter: blur(20px);
-                -webkit-backdrop-filter: blur(20px);
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 52px;
+                background: rgba(255, 255, 255, 0.92);
+                border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+                backdrop-filter: blur(18px);
+                -webkit-backdrop-filter: blur(18px);
                 z-index: 999999;
-                border-bottom: 0.5px solid rgba(0,0,0,0.1);
                 display: flex;
                 justify-content: center;
                 align-items: center;
             }
-            
+
             .nav-list {
-                list-style: none;
                 display: flex;
-                gap: 60px; /* 增加間距 */
+                gap: 10px;
+                list-style: none;
                 margin: 0;
                 padding: 0;
             }
-            
-            .nav-item {
-                position: relative;
-                padding: 14px 0;
-            }
-            
+
+            .nav-item { position: relative; }
             .nav-link {
-                text-decoration: none !important; /* 移除底線 */
-                color: #1d1d1f !important; /* 加深文字顏色 */
-                font-size: 18px; /* 進一步放大字體 */
-                font-weight: 600; /* 加粗到 semi-bold */
-                opacity: 0.8;
-                transition: opacity 0.2s;
-                cursor: pointer;
                 display: flex;
                 align-items: center;
                 gap: 8px;
+                min-height: 36px;
+                padding: 0 14px;
+                border-radius: 10px;
+                color: var(--text) !important;
+                text-decoration: none !important;
+                font-size: 14px;
+                font-weight: 600;
+                transition: background 0.16s ease, color 0.16s ease;
             }
-            
-            .nav-item:hover .nav-link { opacity: 1; text-decoration: none !important; }
-            
-            /* 讓導覽列圖示變黑白並調整大小 */
-            .nav-link span {
-                filter: grayscale(100%);
-                font-size: 20px;
-                line-height: 1;
+
+            .nav-item:hover .nav-link { background: var(--panel); color: #000 !important; }
+            .nav-kicker {
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+                background: var(--blue);
+                opacity: 0.8;
             }
-            
-            /* 下拉選單 (Dropdown) */
+
             .dropdown-menu {
                 position: absolute;
-                top: 85%;
+                top: 43px;
                 left: 50%;
-                transform: translateX(-50%) translateY(-10px);
-                background: rgba(255, 255, 255, 0.98);
-                border: 0.5px solid rgba(0,0,0,0.1);
-                border-radius: 12px;
+                min-width: 220px;
                 padding: 8px;
-                padding-top: 8px;
-                min-width: 240px; /* 選單寬度同步增加 */
-                box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+                border: 1px solid rgba(0, 0, 0, 0.08);
+                border-radius: 12px;
+                background: rgba(255, 255, 255, 0.98);
+                box-shadow: 0 18px 45px rgba(0, 0, 0, 0.11);
                 opacity: 0;
                 visibility: hidden;
-                transition: all 0.2s ease-in-out;
-                z-index: 1000000;
-                display: block;
+                transform: translate(-50%, -6px);
+                transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s ease;
             }
-            
+
             .nav-item:hover .dropdown-menu {
                 opacity: 1;
                 visibility: visible;
-                transform: translateX(-50%) translateY(0);
-            }
-            
-            .dropdown-item {
-                display: block;
-                padding: 12px 16px;
-                color: #1d1d1f !important;
-                text-decoration: none !important; /* 移除底線 */
-                font-size: 16px; /* 放大選單字體 */
-                border-radius: 8px;
-                transition: background 0.1s;
-                cursor: pointer;
-            }
-            
-            .dropdown-item:hover {
-                background: #f5f5f7;
-                text-decoration: none !important;
-            }
-            
-            /* 內容佈局控制 */
-            .block-container {
-                padding-top: 2rem !important;
-                max-width: 1000px !important;
-            }
-            
-            /* 標題樣式 - 加強對比 */
-            .main-title { 
-                font-size: 48px; font-weight: 600; letter-spacing: -1.2px; 
-                text-align: center; color: #1d1d1f; margin-top: 60px; margin-bottom: 5px; 
-            }
-            .sub-title { 
-                font-size: 21px; color: #424245; text-align: center; /* 加深副標題 */
-                margin-bottom: 40px; font-weight: 400; 
-            }
-            
-            /* Metric 卡片美化 - 解決截圖中文字看不見的問題 */
-            [data-testid="stMetric"] { 
-                background-color: #f5f5f7; 
-                padding: 20px; 
-                border-radius: 18px; 
-                border: none; 
-            }
-            [data-testid="stMetricLabel"] { 
-                color: #424245 !important; /* 加深標籤 */
-                font-weight: 500 !important;
-            }
-            [data-testid="stMetricValue"] { 
-                color: #1d1d1f !important; /* 確保數值是黑色的 */
-            }
-            
-            /* 搜尋框加深 */
-            .stTextInput input { 
-                background-color: #f5f5f7 !important; 
-                color: #1d1d1f !important;
-                border-radius: 12px !important; 
-                border: 1px solid #d2d2d7 !important; /* 增加極細邊框提升輪廓感 */
-                padding: 12px !important; 
-                text-align: center;
-            }
-            
-            /* Tab 加深 */
-            .stTabs [data-baseweb="tab"] p {
-                color: #424245 !important;
-                font-weight: 500 !important;
+                transform: translate(-50%, 0);
             }
 
-            /* Dataframe 容器美化 */
-            [data-testid="stDataFrame"] {
-                background-color: #f5f5f7;
-                border-radius: 18px;
-                padding: 12px;
-                border: none;
+            .dropdown-item {
+                display: block;
+                padding: 11px 12px;
+                border-radius: 8px;
+                color: var(--text) !important;
+                text-decoration: none !important;
+                font-size: 14px;
+                font-weight: 500;
             }
-            
-            /* 讓表格內部的捲軸與背景更協調 (選用) */
-            [data-testid="stDataFrame"] > div {
-                background-color: transparent !important;
+
+            .dropdown-item:hover { background: var(--panel); }
+
+            .main-title {
+                margin: 14px 0 8px;
+                color: var(--text);
+                text-align: center;
+                font-size: 44px;
+                font-weight: 700;
+                line-height: 1.08;
+            }
+
+            .sub-title {
+                margin: 0 auto 34px;
+                max-width: 680px;
+                color: var(--muted);
+                text-align: center;
+                font-size: 18px;
+                font-weight: 400;
+                line-height: 1.45;
+            }
+
+            .section-title {
+                margin: 28px 0 12px;
+                color: var(--text);
+                font-size: 20px;
+                font-weight: 700;
+            }
+
+            .panel {
+                padding: 20px;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                background: #fff;
+            }
+
+            .split-header {
+                display: flex;
+                justify-content: space-between;
+                gap: 24px;
+                align-items: flex-end;
+                padding-bottom: 20px;
+                margin-bottom: 22px;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .stock-title {
+                margin: 0;
+                color: var(--text);
+                font-size: 38px;
+                font-weight: 700;
+                line-height: 1.1;
+            }
+
+            .meta-grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(120px, 1fr));
+                gap: 12px;
+                text-align: right;
+            }
+
+            .meta-label {
+                color: var(--subtle);
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+            }
+
+            .meta-value {
+                margin-top: 4px;
+                color: var(--text);
+                font-size: 18px;
+                font-weight: 700;
+            }
+
+            .score-hero {
+                display: grid;
+                place-items: center;
+                margin: 4px 0 28px;
+                padding: 26px 16px;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                background: linear-gradient(180deg, #fff 0%, #f8f8fa 100%);
+            }
+
+            .score-label {
+                color: var(--subtle);
+                font-size: 12px;
+                font-weight: 700;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+            }
+
+            .score-value {
+                margin-top: 4px;
+                font-size: 64px;
+                font-weight: 700;
+                line-height: 1;
+            }
+
+            .score-note {
+                margin-top: 8px;
+                color: var(--muted);
+                font-size: 13px;
+                font-weight: 500;
+            }
+
+            .metric-card {
+                min-height: 112px;
+                padding: 18px;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                background: #fff;
+            }
+
+            .metric-card-label {
+                color: var(--muted);
+                font-size: 13px;
+                font-weight: 600;
+            }
+
+            .metric-card-value {
+                margin-top: 8px;
+                color: var(--text);
+                font-size: 28px;
+                font-weight: 700;
+                line-height: 1;
+            }
+
+            .metric-card-scale {
+                margin-top: 6px;
+                color: var(--subtle);
+                font-size: 12px;
+                font-weight: 500;
+            }
+
+            [data-testid="stMetric"] {
+                padding: 18px;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                background: #fff;
+            }
+
+            [data-testid="stMetricLabel"] p {
+                color: var(--muted) !important;
+                font-size: 12px !important;
+                font-weight: 700 !important;
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+            }
+
+            [data-testid="stMetricValue"] {
+                color: var(--text) !important;
+                font-size: 26px !important;
+                font-weight: 700 !important;
+            }
+
+            .stTextInput input {
+                height: 46px;
+                border: 1px solid var(--border) !important;
+                border-radius: 8px !important;
+                background: #fff !important;
+                color: var(--text) !important;
+                box-shadow: none !important;
+                text-align: center;
+                font-weight: 500;
+            }
+
+            .stTextInput input:focus {
+                border-color: var(--blue) !important;
+                box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12) !important;
+            }
+
+            .stTabs [data-baseweb="tab-list"] {
+                gap: 8px;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .stTabs [data-baseweb="tab"] {
+                height: 42px;
+                border-radius: 8px 8px 0 0;
+                padding: 0 12px;
+            }
+
+            .stTabs [aria-selected="true"] {
+                background: var(--panel);
+            }
+
+            .stTabs [data-baseweb="tab"] p {
+                color: var(--text) !important;
+                font-size: 14px;
+                font-weight: 600 !important;
+            }
+
+            [data-testid="stDataFrame"] {
+                overflow: hidden;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                background: #fff;
+            }
+
+            [data-testid="stDataFrame"] div[role="grid"] {
+                border: none !important;
+            }
+
+            .soft-message {
+                margin-top: 20px;
+                padding: 22px;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                background: var(--panel);
+                text-align: center;
+            }
+
+            .soft-message-title {
+                margin: 0;
+                color: var(--text);
+                font-size: 17px;
+                font-weight: 700;
+            }
+
+            .soft-message-copy {
+                margin: 7px 0 0;
+                color: var(--muted);
+                font-size: 14px;
+            }
+
+            @media (max-width: 760px) {
+                .block-container { padding: 70px 18px 36px !important; }
+                .nav-list { gap: 2px; }
+                .nav-link { padding: 0 9px; font-size: 12px; }
+                .main-title { font-size: 34px; }
+                .sub-title { font-size: 16px; margin-bottom: 24px; }
+                .split-header { display: block; }
+                .stock-title { font-size: 30px; margin-bottom: 18px; }
+                .meta-grid { text-align: left; }
+                .score-value { font-size: 52px; }
             }
             </style>
-            """, unsafe_allow_html=True)
+            """,
+            unsafe_allow_html=True,
+        )
 
     @staticmethod
     def render_apple_nav():
-        """Render the custom HTML/CSS Apple-style navigation"""
-        st.markdown("""
+        st.markdown(
+            """
             <div class="apple-nav">
                 <ul class="nav-list">
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><span>📊</span> Technical</a>
+                        <a class="nav-link" href="#"><span class="nav-kicker"></span>Technical</a>
                         <div class="dropdown-menu">
                             <a href="?page=individual" target="_self" class="dropdown-item">LOHAS Five-Line</a>
                         </div>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><span>💰</span> Financials</a>
+                        <a class="nav-link" href="#"><span class="nav-kicker"></span>Financials</a>
                         <div class="dropdown-menu">
                              <a href="?page=financials_six_index" target="_self" class="dropdown-item">Six-Index Scores</a>
                              <a href="?page=financials_overview" target="_self" class="dropdown-item">Financials Overview</a>
                         </div>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><span>📈</span> Economy</a>
+                        <a class="nav-link" href="#"><span class="nav-kicker"></span>Economy</a>
                         <div class="dropdown-menu">
                             <a href="?page=economy" target="_self" class="dropdown-item">Fear and Greed</a>
                         </div>
                     </li>
                 </ul>
             </div>
-            <div style="margin-top: 48px;"></div>
-        """, unsafe_allow_html=True)
+            """,
+            unsafe_allow_html=True,
+        )
 
     @staticmethod
     def render_header(subtitle="Advanced LOHAS Analysis Tools"):
-        """Render the hero section"""
-        st.markdown('<p class="main-title">Stock Intelligence.</p>', unsafe_allow_html=True)
-        st.markdown(f'<p class="sub-title">{subtitle}</p>', unsafe_allow_html=True)
-    
+        st.markdown('<h1 class="main-title">Stock Intelligence</h1>', unsafe_allow_html=True)
+        st.markdown(f'<p class="sub-title">{html.escape(subtitle)}</p>', unsafe_allow_html=True)
+
     @staticmethod
     def render_search_input() -> str:
-        """Render stock search input field"""
         _, col, _ = st.columns([1, 2, 1])
         with col:
-            val = st.text_input("Stock Search", placeholder="Search Company Name or ID...", label_visibility="collapsed")
-        return val
+            return st.text_input(
+                "Stock Search",
+                placeholder="Search company name or ticker...",
+                label_visibility="collapsed",
+            )
 
     @staticmethod
     def render_metrics(current_price: float, ticker: str, last_date: str):
         c1, c2, c3 = st.columns(3)
-        c1.metric("LATEST PRICE", f"{current_price:.2f} TWD")
-        c2.metric("TICKER", ticker)
-        c3.metric("LAST UPDATED", last_date)
+        c1.metric("Latest Price", f"{current_price:.2f} TWD")
+        c2.metric("Ticker", ticker)
+        c3.metric("Last Updated", last_date)
+
+    @classmethod
+    def _score_color(cls, value: Any) -> str:
+        if not isinstance(value, (int, float)):
+            return cls.TEXT
+        if value >= 3.5:
+            return cls.GREEN
+        if value < 2:
+            return cls.RED
+        return cls.AMBER
+
+    @classmethod
+    def _section_title(cls, title: str):
+        st.markdown(f'<h2 class="section-title">{html.escape(title)}</h2>', unsafe_allow_html=True)
+
+    @classmethod
+    def _chart_layout(cls, fig: go.Figure, height: int = 430, y_range: list[int] | None = None):
+        fig.update_layout(
+            height=height,
+            showlegend=False,
+            plot_bgcolor="#ffffff",
+            paper_bgcolor="#ffffff",
+            margin=dict(l=12, r=12, t=24, b=12),
+            font=dict(family="Inter, sans-serif", color=cls.TEXT, size=12),
+            hovermode="x unified",
+            hoverlabel=dict(bgcolor="#ffffff", bordercolor=cls.BORDER, font_size=12, font_color=cls.TEXT),
+            xaxis=dict(showgrid=False, zeroline=False, tickfont=dict(color=cls.MUTED, size=11)),
+            yaxis=dict(
+                side="right",
+                gridcolor="#ececf1",
+                zeroline=False,
+                tickfont=dict(color=cls.MUTED, size=11),
+                range=y_range,
+            ),
+        )
+        return fig
+
+    @classmethod
+    def _plot(cls, fig: go.Figure):
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False, "responsive": True})
+
+    @classmethod
+    def _render_table(
+        cls,
+        df: pd.DataFrame,
+        *,
+        height: int | None = None,
+        column_config: dict[str, Any] | None = None,
+    ):
+        kwargs: dict[str, Any] = {
+            "use_container_width": True,
+            "hide_index": True,
+            "column_config": column_config,
+        }
+        if height is not None:
+            kwargs["height"] = height
+        st.dataframe(df, **kwargs)
 
     @staticmethod
-    def render_five_lines_chart(stock_data, lines_data: dict):
-        custom_hover = "<b>%{fullData.name}</b>: %{y:.2f}<extra></extra>"
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=stock_data.index.tolist() + stock_data.index.tolist()[::-1],
-            y=(lines_data['lines']['+2SD']).tolist() + (lines_data['lines']['-2SD']).tolist()[::-1],
-            fill='toself', fillcolor='rgba(245, 245, 247, 0.4)',
-            line=dict(color='rgba(0,0,0,0)'), hoverinfo='skip'
-        ))
-        colors = ['#e1e1e6', '#d1d1d6', '#d1d1d6', '#e1e1e6']
-        names = ['+2SD', '+1SD', '-1SD', '-2SD']
-        for color, name in zip(colors, names):
-            fig.add_trace(go.Scatter(x=stock_data.index, y=lines_data['lines'][name], name=name, line=dict(color=color, width=1), hovertemplate=custom_hover))
-        fig.add_trace(go.Scatter(x=stock_data.index, y=lines_data['lines']['Trend'], name='Trend', line=dict(color='#86868b', width=1, dash='dot'), hovertemplate=custom_hover))
-        fig.add_trace(go.Scatter(x=stock_data.index, y=stock_data['close'], name='Close', line=dict(color='#1d1d1f', width=2.5), hovertemplate=custom_hover))
-        fig.update_layout(
-            showlegend=False, plot_bgcolor='white', paper_bgcolor='white',
-            margin=dict(l=0, r=0, t=20, b=0),
-            xaxis=dict(showgrid=False, tickfont=dict(color='#424245', size=11)),
-            yaxis=dict(gridcolor='#f5f5f7', side='right', tickfont=dict(color='#424245', size=11)),
-            hovermode="x unified"
-        )
-        st.plotly_chart(fig, width='stretch')
+    def _first_existing(df: pd.DataFrame, candidates: list[str]) -> str | None:
+        for col in candidates:
+            if col in df.columns:
+                return col
+        return None
 
     @staticmethod
-    def render_channel_chart(stock_data, channel_data: dict):
-        custom_hover = "<b>%{fullData.name}</b>: %{y:.2f}<extra></extra>"
+    def _safe_get(mapping: dict[str, Any], candidates: list[str], default: Any = "N/A") -> Any:
+        for key in candidates:
+            if key in mapping:
+                return mapping.get(key, default)
+        return default
+
+    @staticmethod
+    def _html(value: Any) -> str:
+        return html.escape(str(value))
+
+    @classmethod
+    def render_five_lines_chart(cls, stock_data, lines_data: dict):
+        hover = "<b>%{fullData.name}</b>: %{y:.2f}<extra></extra>"
         fig = go.Figure()
-        ch_style = dict(color='#0071e3', width=1.5)
-        fig.add_trace(go.Scatter(x=stock_data.index, y=channel_data['lines']['Top'], name='Top', line=ch_style, hovertemplate=custom_hover))
-        fig.add_trace(go.Scatter(x=stock_data.index, y=channel_data['lines']['Bottom'], name='Bottom', line=ch_style, hovertemplate=custom_hover))
-        fig.add_trace(go.Scatter(x=stock_data.index, y=channel_data['lines']['20W MA'], name='20W MA', line=dict(color='#d2d2d7', width=1, dash='dash'), hovertemplate=custom_hover))
-        fig.add_trace(go.Scatter(x=stock_data.index, y=stock_data['close'], name='Close', line=dict(color='#1d1d1f', width=2.5), hovertemplate=custom_hover))
-        fig.update_layout(
-            showlegend=False, plot_bgcolor='white', paper_bgcolor='white',
-            margin=dict(l=0, r=0, t=20, b=0),
-            xaxis=dict(showgrid=False, tickfont=dict(color='#424245', size=11)),
-            yaxis=dict(gridcolor='#f5f5f7', side='right', tickfont=dict(color='#424245', size=11)),
-            hovermode="x unified"
+        fig.add_trace(
+            go.Scatter(
+                x=stock_data.index.tolist() + stock_data.index.tolist()[::-1],
+                y=lines_data["lines"]["+2SD"].tolist() + lines_data["lines"]["-2SD"].tolist()[::-1],
+                fill="toself",
+                fillcolor="rgba(0, 113, 227, 0.06)",
+                line=dict(color="rgba(0,0,0,0)"),
+                hoverinfo="skip",
+            )
         )
-        st.plotly_chart(fig, width='stretch')
+        for color, name in [("#c7c7cc", "+2SD"), ("#b6b6bf", "+1SD"), ("#b6b6bf", "-1SD"), ("#c7c7cc", "-2SD")]:
+            fig.add_trace(
+                go.Scatter(
+                    x=stock_data.index,
+                    y=lines_data["lines"][name],
+                    name=name,
+                    line=dict(color=color, width=1.1),
+                    hovertemplate=hover,
+                )
+            )
+        fig.add_trace(
+            go.Scatter(
+                x=stock_data.index,
+                y=lines_data["lines"]["Trend"],
+                name="Trend",
+                line=dict(color=cls.BLUE, width=1.4, dash="dot"),
+                hovertemplate=hover,
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=stock_data.index,
+                y=stock_data["close"],
+                name="Close",
+                line=dict(color=cls.TEXT, width=2.4),
+                hovertemplate=hover,
+            )
+        )
+        cls._plot(cls._chart_layout(fig))
+
+    @classmethod
+    def render_channel_chart(cls, stock_data, channel_data: dict):
+        hover = "<b>%{fullData.name}</b>: %{y:.2f}<extra></extra>"
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=stock_data.index,
+                y=channel_data["lines"]["Top"],
+                name="Top",
+                line=dict(color=cls.BLUE, width=1.4),
+                hovertemplate=hover,
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=stock_data.index,
+                y=channel_data["lines"]["Bottom"],
+                name="Bottom",
+                fill="tonexty",
+                fillcolor="rgba(0, 113, 227, 0.06)",
+                line=dict(color=cls.BLUE, width=1.4),
+                hovertemplate=hover,
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=stock_data.index,
+                y=channel_data["lines"]["20W MA"],
+                name="20W MA",
+                line=dict(color="#9b9ba5", width=1.2, dash="dash"),
+                hovertemplate=hover,
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=stock_data.index,
+                y=stock_data["close"],
+                name="Close",
+                line=dict(color=cls.TEXT, width=2.4),
+                hovertemplate=hover,
+            )
+        )
+        cls._plot(cls._chart_layout(fig))
 
     @staticmethod
     def render_tabs(stock_data, five_lines_data: dict, channel_data: dict):
         tab1, tab2 = st.tabs(["Lohas 5-Lines", "Lohas Channel"])
-        with tab1: AppView.render_five_lines_chart(stock_data, five_lines_data)
-        with tab2: AppView.render_channel_chart(stock_data, channel_data)
+        with tab1:
+            AppView.render_five_lines_chart(stock_data, five_lines_data)
+        with tab2:
+            AppView.render_channel_chart(stock_data, channel_data)
 
-    @staticmethod
-    def render_not_found_message(search_term: str):
-        st.markdown(f"""
-            <div style="padding: 24px; background-color: #f5f5f7; border-radius: 18px; text-align: center; margin-top: 20px;">
-                <p style="margin: 0; font-size: 18px; color: #1d1d1f; font-weight: 500;">We couldn't find "{search_term}".</p>
-                <p style="margin: 8px 0 0 0; font-size: 14px; color: #86868b;">Check the ticker symbol or company name.</p>
+    @classmethod
+    def render_not_found_message(cls, search_term: str):
+        st.markdown(
+            f"""
+            <div class="soft-message">
+                <p class="soft-message-title">No match for "{cls._html(search_term)}"</p>
+                <p class="soft-message-copy">Check the ticker symbol or company name and try again.</p>
             </div>
-        """, unsafe_allow_html=True)
+            """,
+            unsafe_allow_html=True,
+        )
 
-    @staticmethod
-    def render_financial_overview(df: pd.DataFrame):
-        """Render the Financials Overview table"""
-        st.markdown('<p class="main-title">Financials Overview.</p>', unsafe_allow_html=True)
-        st.markdown('<p class="sub-title">Latest Financial Scores & Lohas Levels</p>', unsafe_allow_html=True)
-        
+    @classmethod
+    def render_financial_overview(cls, df: pd.DataFrame):
+        st.markdown('<h1 class="main-title">Financials Overview</h1>', unsafe_allow_html=True)
+        st.markdown('<p class="sub-title">Latest financial scores and LOHAS levels</p>', unsafe_allow_html=True)
+
         if df.empty:
             st.info("No financial data available.")
             return
 
-        # 搜尋功能
         _, col, _ = st.columns([1, 2, 1])
         with col:
-            search_query = st.text_input("Search Overview", placeholder="Search Company Name or ID...", label_visibility="collapsed")
-        
-        filtered_df = df.copy()
-        if search_query:
-            filtered_df = filtered_df[
-                filtered_df['代號'].astype(str).str.contains(search_query) | 
-                filtered_df['名稱'].str.contains(search_query)
-            ]
+            search_query = st.text_input(
+                "Search Overview",
+                placeholder="Search company name or ticker...",
+                label_visibility="collapsed",
+            )
 
-        # 處理 樂活五線譜 (Level) 轉為整數並處理缺失值
-        # 我們使用 map 來處理顯示，這不會改變原始資料類型，但會讓渲染更漂亮
-        display_df = filtered_df.copy()
-        
-        # 處理 Level 的顯示
-        display_df['樂活五線譜'] = display_df['樂活五線譜'].apply(
-            lambda x: str(int(x)) if pd.notnull(x) else "-"
-        )
+        display_df = df.copy()
+        id_col = cls._first_existing(display_df, ["Ticker", "stock_id", "代號"])
+        name_col = cls._first_existing(display_df, ["Name", "stock_name", "名稱"])
+        level_col = cls._first_existing(display_df, ["LOHAS Level", "樂活五線譜"])
 
-        column_config = {
-            "代號": st.column_config.TextColumn("代號"),
-            "名稱": st.column_config.TextColumn("名稱"),
-            "總分": st.column_config.NumberColumn("總分", format="%.2f"),
-            "月營收評分": st.column_config.NumberColumn("月營收評分"),
-            "營業利益率評分": st.column_config.NumberColumn("營業利益率評分"),
-            "淨利成長評分": st.column_config.NumberColumn("淨利成長評分"),
-            "EPS評分": st.column_config.NumberColumn("EPS評分"),
-            "存貨周轉率評分": st.column_config.TextColumn("存貨周轉率評分"),
-            "自由現金流評分": st.column_config.NumberColumn("自由現金流評分"),
+        if search_query and id_col:
+            mask = display_df[id_col].astype(str).str.contains(search_query, case=False, na=False)
+            if name_col:
+                mask = mask | display_df[name_col].astype(str).str.contains(search_query, case=False, na=False)
+            display_df = display_df[mask]
+
+        if level_col:
+            display_df[level_col] = display_df[level_col].apply(lambda x: str(int(x)) if pd.notnull(x) else "-")
+
+        rename_map = {
+            "代號": "Ticker",
+            "名稱": "Name",
+            "產業": "Industry",
+            "上市日期": "Listed",
+            "財報季度": "Quarter",
+            "營收月份": "Month",
+            "總分": "Average Score",
+            "樂活五線譜": "LOHAS Level",
+            "月營收評分": "Revenue",
+            "營業利益率評分": "OP Margin",
+            "淨利成長評分": "Net Profit",
+            "EPS評分": "EPS",
+            "存貨周轉率評分": "Inventory",
+            "自由現金流量評分": "Cash Flow",
         }
+        display_df = display_df.rename(columns={k: v for k, v in rename_map.items() if k in display_df.columns})
 
-        st.dataframe(
-            display_df, 
-            width='stretch', 
-            height=650, 
-            hide_index=True, 
-            column_config=column_config
-        )
+        preferred = [
+            "Ticker",
+            "Name",
+            "Industry",
+            "Average Score",
+            "LOHAS Level",
+            "Revenue",
+            "OP Margin",
+            "Net Profit",
+            "EPS",
+            "Inventory",
+            "Cash Flow",
+            "Quarter",
+            "Month",
+        ]
+        cols = [c for c in preferred if c in display_df.columns] + [c for c in display_df.columns if c not in preferred]
+        display_df = display_df[cols]
 
-    @staticmethod
-    def render_economy_page(data: dict):
-        """Render the Economy page with CNN Fear & Greed Index"""
-        st.markdown('<p class="main-title">Market Sentiment.</p>', unsafe_allow_html=True)
+        numeric_score_cols = ["Average Score", "Revenue", "OP Margin", "Net Profit", "EPS", "Cash Flow"]
+        column_config = {
+            "Ticker": st.column_config.TextColumn("Ticker", width="small"),
+            "Name": st.column_config.TextColumn("Name", width="medium"),
+            "Industry": st.column_config.TextColumn("Industry", width="medium"),
+            "Average Score": st.column_config.ProgressColumn("Average Score", min_value=0, max_value=4, format="%.2f"),
+            "LOHAS Level": st.column_config.TextColumn("LOHAS Level", width="small"),
+        }
+        for col_name in numeric_score_cols:
+            if col_name not in column_config:
+                column_config[col_name] = st.column_config.NumberColumn(col_name, format="%.2f", width="small")
+
+        cls._render_table(display_df, height=650, column_config=column_config)
+
+    @classmethod
+    def render_economy_page(cls, data: dict):
+        st.markdown('<h1 class="main-title">Market Sentiment</h1>', unsafe_allow_html=True)
         st.markdown('<p class="sub-title">CNN Fear & Greed Index</p>', unsafe_allow_html=True)
-        
+
         tab1, tab2 = st.tabs(["Overview", "Timeline"])
-        
         with tab1:
             col1, col2 = st.columns([2, 1])
             with col1:
-                AppView.render_fear_greed_gauge(data['current_score'], data['current_rating'])
-                st.markdown(f'<p style="color: #86868b; font-size: 12px; text-align: center;">Last updated {data["last_updated"]}</p>', unsafe_allow_html=True)
-            
+                cls.render_fear_greed_gauge(data["current_score"], data["current_rating"])
+                st.markdown(
+                    f'<p style="color:#86868b;font-size:12px;text-align:center;">Last updated {cls._html(data["last_updated"])}</p>',
+                    unsafe_allow_html=True,
+                )
             with col2:
-                st.markdown('<div style="padding-top: 40px;"></div>', unsafe_allow_html=True)
-                metrics = [
-                    ("Previous close", data['previous_close']),
-                    ("1 week ago", data['previous_1_week']),
-                    ("1 month ago", data['previous_1_month']),
-                    ("1 year ago", data['previous_1_year'])
-                ]
-                
-                for label, value in metrics:
+                cls._section_title("Previous Readings")
+                for label, value in [
+                    ("Previous close", data["previous_close"]),
+                    ("1 week ago", data["previous_1_week"]),
+                    ("1 month ago", data["previous_1_month"]),
+                    ("1 year ago", data["previous_1_year"]),
+                ]:
                     rating = "Neutral"
-                    if value <= 25: rating = "Extreme Fear"
-                    elif value <= 45: rating = "Fear"
-                    elif value <= 55: rating = "Neutral"
-                    elif value <= 75: rating = "Greed"
-                    else: rating = "Extreme Greed"
-                    
-                    color = "#1d1d1f"
-                    if "Greed" in rating: color = "#00c805"
-                    elif "Fear" in rating: color = "#ff3b30"
-                    
-                    st.markdown(f"""
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 0.5px solid #d2d2d7;">
-                            <div>
-                                <div style="font-size: 14px; color: #424245;">{label}</div>
-                                <div style="font-size: 16px; font-weight: 600; color: {color};">{rating}</div>
-                            </div>
-                            <div style="width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid #d2d2d7; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600;">
-                                {int(value)}
+                    if value <= 25:
+                        rating = "Extreme Fear"
+                    elif value <= 45:
+                        rating = "Fear"
+                    elif value <= 55:
+                        rating = "Neutral"
+                    elif value <= 75:
+                        rating = "Greed"
+                    else:
+                        rating = "Extreme Greed"
+                    color = cls.GREEN if "Greed" in rating else cls.RED if "Fear" in rating else cls.TEXT
+                    st.markdown(
+                        f"""
+                        <div class="metric-card" style="min-height:auto;margin-bottom:10px;">
+                            <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;">
+                                <div>
+                                    <div class="metric-card-label">{cls._html(label)}</div>
+                                    <div style="margin-top:4px;font-weight:700;color:{color};">{rating}</div>
+                                </div>
+                                <div style="font-size:24px;font-weight:700;color:{color};">{int(value)}</div>
                             </div>
                         </div>
-                    """, unsafe_allow_html=True)
+                        """,
+                        unsafe_allow_html=True,
+                    )
 
         with tab2:
-            AppView.render_fear_greed_timeline(data['historical_data'])
+            cls.render_fear_greed_timeline(data["historical_data"])
 
-    @staticmethod
-    def render_fear_greed_gauge(score: float, rating: str):
-        """Render the Gauge chart for Fear & Greed Index"""
-        fig = go.Figure(go.Indicator(
-            mode = "gauge+number",
-            value = score,
-            domain = {'x': [0, 1], 'y': [0, 1]},
-            title = {'text': rating.upper(), 'font': {'size': 24, 'color': '#1d1d1f'}},
-            gauge = {
-                'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#86868b"},
-                'bar': {'color': "#1d1d1f", 'thickness': 0.15},
-                'bgcolor': "white",
-                'borderwidth': 0,
-                'steps': [
-                    {'range': [0, 25], 'color': '#f5f5f7'},
-                    {'range': [25, 45], 'color': '#e5e5e7'},
-                    {'range': [45, 55], 'color': '#d2d2d7'},
-                    {'range': [55, 75], 'color': '#e5e5e7'},
-                    {'range': [75, 100], 'color': '#f5f5f7'},
-                ],
-                'threshold': {
-                    'line': {'color': "#1d1d1f", 'width': 4},
-                    'thickness': 0.75,
-                    'value': score
-                }
-            }
-        ))
-        
-        fig.update_layout(
-            paper_bgcolor='white',
-            font={'color': "#1d1d1f", 'family': "sans-serif"},
-            margin=dict(l=20, r=20, t=50, b=20),
-            height=400
+    @classmethod
+    def render_fear_greed_gauge(cls, score: float, rating: str):
+        fig = go.Figure(
+            go.Indicator(
+                mode="gauge+number",
+                value=score,
+                domain={"x": [0, 1], "y": [0, 1]},
+                title={"text": rating.upper(), "font": {"size": 20, "color": cls.TEXT}},
+                gauge={
+                    "axis": {"range": [0, 100], "tickwidth": 1, "tickcolor": cls.SUBTLE},
+                    "bar": {"color": cls.TEXT, "thickness": 0.16},
+                    "bgcolor": "white",
+                    "borderwidth": 0,
+                    "steps": [
+                        {"range": [0, 25], "color": "#fdecec"},
+                        {"range": [25, 45], "color": "#fff4de"},
+                        {"range": [45, 55], "color": "#ececf1"},
+                        {"range": [55, 75], "color": "#e9f7ef"},
+                        {"range": [75, 100], "color": "#dff3e7"},
+                    ],
+                    "threshold": {
+                        "line": {"color": cls.TEXT, "width": 4},
+                        "thickness": 0.74,
+                        "value": score,
+                    },
+                },
+            )
         )
-        st.plotly_chart(fig, width='stretch')
+        fig.update_layout(
+            height=390,
+            paper_bgcolor="white",
+            font={"color": cls.TEXT, "family": "Inter, sans-serif"},
+            margin=dict(l=16, r=16, t=50, b=12),
+        )
+        cls._plot(fig)
 
-    @staticmethod
-    def render_fear_greed_timeline(df: pd.DataFrame):
-        """Render the historical timeline for Fear & Greed Index"""
+    @classmethod
+    def render_fear_greed_timeline(cls, df: pd.DataFrame):
         fig = go.Figure()
-        
-        # Add historical line
-        fig.add_trace(go.Scatter(
-            x=df['date'], y=df['score'],
-            name='Fear & Greed Index',
-            line=dict(color='#0071e3', width=2),
-            hovertemplate="Score: %{y:.0f}<extra></extra>"
-        ))
-        
-        # Add reference lines
-        for val, label in [(25, "Extreme Fear"), (75, "Extreme Greed")]:
-            fig.add_hline(y=val, line_dash="dot", line_color="#d2d2d7", annotation_text=label)
-
-        fig.update_layout(
-            showlegend=False, plot_bgcolor='white', paper_bgcolor='white',
-            margin=dict(l=0, r=0, t=20, b=0),
-            xaxis=dict(showgrid=False, tickfont=dict(color='#424245', size=11), rangeslider=dict(visible=True)),
-            yaxis=dict(gridcolor='#f5f5f7', side='right', tickfont=dict(color='#424245', size=11), range=[0, 100]),
-            hovermode="x unified"
+        fig.add_trace(
+            go.Scatter(
+                x=df["date"],
+                y=df["score"],
+                name="Fear & Greed Index",
+                line=dict(color=cls.BLUE, width=2.4),
+                hovertemplate="Score: %{y:.0f}<extra></extra>",
+            )
         )
-        st.plotly_chart(fig, width='stretch')
+        for val, label in [(25, "Extreme Fear"), (75, "Extreme Greed")]:
+            fig.add_hline(y=val, line_dash="dot", line_color=cls.BORDER, annotation_text=label)
 
-    @staticmethod
-    def render_financial_dashboard(ticker: str, stock_name: str, results: dict, raw_data: dict, history_df: pd.DataFrame = None, lohas_bundle: dict = None):
-        """Render the Six-Index Scores dashboard"""
-        
-        # 1. Info Header (Ticker & Dates)
+        fig = cls._chart_layout(fig, height=430, y_range=[0, 100])
+        fig.update_xaxes(rangeslider=dict(visible=True, thickness=0.06))
+        cls._plot(fig)
+
+    @classmethod
+    def render_financial_dashboard(
+        cls,
+        ticker: str,
+        stock_name: str,
+        results: dict,
+        raw_data: dict,
+        history_df: pd.DataFrame | None = None,
+        lohas_bundle: dict | None = None,
+    ):
         display_title = f"{ticker} {stock_name}" if stock_name and stock_name != ticker else ticker
-        
-        st.markdown(f"""
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; padding: 0 10px;">
-                <div>
-                    <div style="font-size: 42px; font-weight: 700; color: #1d1d1f;">{display_title}</div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 14px; color: #86868b; margin-bottom: 2px;">FISCAL QUARTER</div>
-                    <div style="font-size: 24px; font-weight: 600; color: #1d1d1f; margin-bottom: 8px;">{results.get('財報季度', 'N/A')}</div>
-                    <div style="font-size: 14px; color: #86868b; margin-bottom: 2px;">REVENUE MONTH</div>
-                    <div style="font-size: 24px; font-weight: 600; color: #1d1d1f;">{results.get('營收月份', 'N/A')}</div>
+        quarter = cls._safe_get(results, ["財報季度"])
+        revenue_month = cls._safe_get(results, ["營收月份"])
+
+        st.markdown(
+            f"""
+            <div class="split-header">
+                <h1 class="stock-title">{cls._html(display_title)}</h1>
+                <div class="meta-grid">
+                    <div>
+                        <div class="meta-label">Fiscal Quarter</div>
+                        <div class="meta-value">{cls._html(quarter)}</div>
+                    </div>
+                    <div>
+                        <div class="meta-label">Revenue Month</div>
+                        <div class="meta-value">{cls._html(revenue_month)}</div>
+                    </div>
                 </div>
             </div>
-            <hr style="border: 0; border-top: 0.5px solid #d2d2d7; margin-bottom: 30px;">
-        """, unsafe_allow_html=True)
-        
-        # 2. Total Score
-        total_score = results.get('總分', 'N/A')
-        score_color = "#1d1d1f"
-        if isinstance(total_score, (int, float)):
-            if total_score >= 3.5: score_color = "#00c805"
-            elif total_score < 2: score_color = "#ff3b30"
-            
-        st.markdown(f"""
-            <div style="text-align: center; margin-bottom: 40px;">
-                <div style="font-size: 16px; color: #86868b; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;">Average Score</div>
-                <div style="font-size: 72px; font-weight: 700; color: {score_color}; line-height: 1.1;">{total_score}</div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        total_score = cls._safe_get(results, ["總分", "本期綜合評分"])
+        score_color = cls._score_color(total_score)
+        st.markdown(
+            f"""
+            <div class="score-hero">
+                <div class="score-label">Average Score</div>
+                <div class="score-value" style="color:{score_color};">{cls._html(total_score)}</div>
+                <div class="score-note">Six-index financial quality score</div>
             </div>
-        """, unsafe_allow_html=True)
-        
-        # 3. Six Metrics Grid
-        c1, c2, c3 = st.columns(3)
-        c4, c5, c6 = st.columns(3)
-        
+            """,
+            unsafe_allow_html=True,
+        )
+
         metrics_map = [
-            ("Revenue", "月營收評分", c1),
-            ("OP Margin", "營業利益率評分", c2),
-            ("Net Profit", "淨利成長評分", c3),
-            ("EPS", "EPS評分", c4),
-            ("Inventory", "存貨周轉率評分", c5),
-            ("Cash Flow", "自由現金流評分", c6)
+            ("Revenue", ["月營收評分", "營收年增率"]),
+            ("OP Margin", ["營業利益率評分", "營業利益率"]),
+            ("Net Profit", ["淨利成長評分", "稅後淨利年增率"]),
+            ("EPS", ["EPS評分", "每股盈餘EPS"]),
+            ("Inventory", ["存貨周轉率評分", "存貨周轉率"]),
+            ("Cash Flow", ["自由現金流評分", "自由現金流量"]),
         ]
-        
-        for label, key, col in metrics_map:
-            val = results.get(key, 'N/A')
-            col.metric(label, f"{val} / 4" if isinstance(val, (int, float)) else val)
-            
-        st.markdown('<div style="margin-top: 40px;"></div>', unsafe_allow_html=True)
+        cols = st.columns(3)
+        for idx, (label, keys) in enumerate(metrics_map):
+            val = cls._safe_get(results, keys)
+            color = cls._score_color(val)
+            with cols[idx % 3]:
+                st.markdown(
+                    f"""
+                    <div class="metric-card">
+                        <div class="metric-card-label">{label}</div>
+                        <div class="metric-card-value" style="color:{color};">{cls._html(val)}</div>
+                        <div class="metric-card-scale">Score out of 4</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            if idx == 2:
+                cols = st.columns(3)
 
-        # 4. Raw Data Tables (Split into 6 Tabs)
+        st.markdown('<div style="height:28px;"></div>', unsafe_allow_html=True)
         tabs = st.tabs(["Monthly Revenue", "Operating Margin", "Net Profit Growth", "EPS", "Inventory Turnover", "Free Cash Flow"])
-        
-        # Helper to format and display
-        def render_df(df, cols, rename_map, empty_msg):
-            if df is not None and not df.empty and all(c in df.columns for c in cols):
-                sub_df = df[cols].rename(columns=rename_map)
-                st.dataframe(sub_df, width='stretch', hide_index=True)
-            else:
+
+        def render_df(df: pd.DataFrame | None, candidates: list[list[str]], names: list[str], empty_msg: str):
+            if df is None or df.empty:
                 st.info(empty_msg)
+                return
+            selected = [cls._first_existing(df, group) for group in candidates]
+            if any(col is None for col in selected):
+                st.info(empty_msg)
+                return
+            table = df[selected].copy()
+            table.columns = names
+            config = {name: st.column_config.NumberColumn(name, format="%.2f") for name in names if name not in ["Month", "Quarter"]}
+            cls._render_table(table, column_config=config)
 
-        with tabs[0]: # Monthly Revenue
+        with tabs[0]:
             render_df(
-                raw_data.get('revenue'), 
-                ['date', 'revenue', 'yoy'], 
-                {'date': 'Month', 'revenue': 'Revenue (Thousand TWD)', 'yoy': 'YoY (%)'}, 
-                "No revenue data available."
+                raw_data.get("revenue"),
+                [["date"], ["revenue"], ["yoy"]],
+                ["Month", "Revenue (Thousand TWD)", "YoY (%)"],
+                "No revenue data available.",
             )
-                
-        with tabs[1]: # Operating Margin
+        with tabs[1]:
             render_df(
-                raw_data.get('profitability'), 
-                ['quarter', '營業利益率'], 
-                {'quarter': 'Quarter', '營業利益率': 'Operating Margin (%)'}, 
-                "No operating margin data available."
+                raw_data.get("profitability"),
+                [["quarter"], ["營業利益率"]],
+                ["Quarter", "Operating Margin (%)"],
+                "No operating margin data available.",
             )
-
-        with tabs[2]: # Net Profit Growth
+        with tabs[2]:
             render_df(
-                raw_data.get('profitability'), 
-                ['quarter', '稅後淨利成長率'], 
-                {'quarter': 'Quarter', '稅後淨利成長率': 'Net Profit Growth (%)'}, 
-                "No net profit growth data available."
+                raw_data.get("profitability"),
+                [["quarter"], ["稅後淨利成長率", "稅後淨利年增率"]],
+                ["Quarter", "Net Profit Growth (%)"],
+                "No net profit growth data available.",
             )
-
-        with tabs[3]: # EPS
+        with tabs[3]:
             render_df(
-                raw_data.get('profitability'), 
-                ['quarter', '每股盈餘'], 
-                {'quarter': 'Quarter', '每股盈餘': 'EPS (TWD)'}, 
-                "No EPS data available."
+                raw_data.get("profitability"),
+                [["quarter"], ["每股盈餘", "每股盈餘EPS"]],
+                ["Quarter", "EPS (TWD)"],
+                "No EPS data available.",
             )
-
-        with tabs[4]: # Inventory Turnover
+        with tabs[4]:
             render_df(
-                raw_data.get('profitability'), 
-                ['quarter', '存貨週轉率(次)'], 
-                {'quarter': 'Quarter', '存貨週轉率(次)': 'Inventory Turnover (Times)'}, 
-                "No inventory turnover data available."
+                raw_data.get("profitability"),
+                [["quarter"], ["存貨週轉率(次)", "存貨周轉率"]],
+                ["Quarter", "Inventory Turnover"],
+                "No inventory turnover data available.",
             )
-
-        with tabs[5]: # Free Cash Flow
+        with tabs[5]:
             render_df(
-                raw_data.get('cashflow'), 
-                ['quarter', 'fcf'], 
-                {'quarter': 'Quarter', 'fcf': 'Free Cash Flow (Million TWD)'}, 
-                "No cash flow data available."
+                raw_data.get("cashflow"),
+                [["quarter"], ["fcf"]],
+                ["Quarter", "Free Cash Flow"],
+                "No cash flow data available.",
             )
 
-        # 5. Integrated LOHAS Charts
         if lohas_bundle:
-            st.markdown('<div style="margin-top: 40px;"></div>', unsafe_allow_html=True)
-            st.markdown('<p class="sub-title">Lohas Technical Analysis</p>', unsafe_allow_html=True)
+            cls._section_title("LOHAS Technical Analysis")
             l_tab1, l_tab2 = st.tabs(["Lohas 5-Lines", "Lohas Channel"])
             with l_tab1:
-                AppView.render_five_lines_chart(lohas_bundle['stock_data'], lohas_bundle['five_lines_data'])
+                cls.render_five_lines_chart(lohas_bundle["stock_data"], lohas_bundle["five_lines_data"])
             with l_tab2:
-                AppView.render_channel_chart(lohas_bundle['stock_data'], lohas_bundle['channel_data'])
+                cls.render_channel_chart(lohas_bundle["stock_data"], lohas_bundle["channel_data"])
 
-        # 5. Historical Analysis Section
         if history_df is not None and not history_df.empty:
-            st.markdown('<div style="margin-top: 60px;"></div>', unsafe_allow_html=True)
-            st.markdown('<p class="sub-title">Historical Performance Analysis</p>', unsafe_allow_html=True)
-            
-            # 確保日期排序正確 (舊 -> 新) 供繪圖
-            hist_plot = history_df.sort_values('營收月份')
-            
-            # Trend Chart
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=hist_plot['營收月份'], 
-                y=hist_plot['本期綜合評分'],
-                mode='lines+markers',
-                name='Total Score',
-                line=dict(color='#0071e3', width=3),
-                marker=dict(size=8, color='#ffffff', line=dict(width=2, color='#0071e3')),
-                hovertemplate="Score: %{y:.2f}<extra></extra>"
-            ))
-            
-            fig.update_layout(
-                title={'text': 'Total Score Trend', 'font': {'size': 18, 'color': '#1d1d1f'}},
-                showlegend=False, 
-                plot_bgcolor='white', 
-                paper_bgcolor='white',
-                margin=dict(l=20, r=20, t=40, b=20),
-                xaxis=dict(
-                    type='category', # 強制使用類別型，只顯示字串日期
-                    showgrid=False, 
-                    tickfont=dict(color='#86868b')
-                ),
-                yaxis=dict(showgrid=True, gridcolor='#f5f5f7', range=[0, 4.2], tickfont=dict(color='#86868b')),
-                hovermode="x unified"
-            )
-            st.plotly_chart(fig, width='stretch')
-            
-            # Historical Data Table
-            st.markdown('<div style="margin-top: 20px;"></div>', unsafe_allow_html=True)
-            st.markdown('<p style="font-size: 18px; font-weight: bold; color: #1d1d1f; margin-bottom: 10px;">Historical Data Table</p>', unsafe_allow_html=True)
-            
-            # 選擇並重新命名欄位以供顯示
-            display_cols = [
-                '營收月份', '財報季度', '本期綜合評分', '綜合評分變化',
-                '營收年增率', '營業利益率', '稅後淨利年增率', 
-                '每股盈餘EPS', '存貨周轉率', '自由現金流量'
-            ]
+            cls._section_title("Historical Performance")
+            month_col = cls._first_existing(history_df, ["營收月份", "Month"])
+            score_col = cls._first_existing(history_df, ["本期綜合評分", "總分", "Total Score"])
+            if month_col and score_col:
+                hist_plot = history_df.sort_values(month_col)
+                fig = go.Figure()
+                fig.add_trace(
+                    go.Scatter(
+                        x=hist_plot[month_col],
+                        y=hist_plot[score_col],
+                        mode="lines+markers",
+                        name="Total Score",
+                        line=dict(color=cls.BLUE, width=2.6),
+                        marker=dict(size=7, color="#ffffff", line=dict(width=2, color=cls.BLUE)),
+                        hovertemplate="Score: %{y:.2f}<extra></extra>",
+                    )
+                )
+                fig = cls._chart_layout(fig, height=360, y_range=[0, 4.2])
+                fig.update_xaxes(type="category")
+                cls._plot(fig)
+
             rename_map = {
-                '營收月份': 'Month', 
-                '財報季度': 'Quarter',
-                '本期綜合評分': 'Total Score',
-                '綜合評分變化': 'Change',
-                '營收年增率': 'Rev Score', 
-                '營業利益率': 'OP Margin Score',
-                '稅後淨利年增率': 'Net Profit Score', 
-                '每股盈餘EPS': 'EPS Score',
-                '存貨周轉率': 'Inv Score',
-                '自由現金流量': 'FCF Score'
+                "營收月份": "Month",
+                "財報季度": "Quarter",
+                "本期綜合評分": "Total Score",
+                "綜合評分變化": "Change",
+                "營收年增率": "Revenue",
+                "營業利益率": "OP Margin",
+                "稅後淨利年增率": "Net Profit",
+                "每股盈餘EPS": "EPS",
+                "存貨周轉率": "Inventory",
+                "自由現金流量": "Cash Flow",
             }
-            
-            # 處理欄位可能不存在的情況 (防禦性程式設計)
-            avail_cols = [c for c in display_cols if c in history_df.columns]
-            final_hist_df = history_df[avail_cols].rename(columns=rename_map)
-            
-            # 使用 column_config 調整對齊與格式
-            column_config = {
-                "Month": st.column_config.TextColumn("Month"),
-                "Quarter": st.column_config.TextColumn("Quarter"),
-                "Total Score": st.column_config.NumberColumn("Total Score", format="%.2f"),
-                "Change": st.column_config.NumberColumn("Change", format="%+.2f"),
-                "Rev Score": st.column_config.NumberColumn("Rev Score"),
-                "OP Margin Score": st.column_config.NumberColumn("OP Margin Score"),
-                "Net Profit Score": st.column_config.NumberColumn("Net Profit Score"),
-                "EPS Score": st.column_config.NumberColumn("EPS Score"),
-                "Inv Score": st.column_config.NumberColumn("Inv Score", help="Inventory Score"),
-                "FCF Score": st.column_config.NumberColumn("FCF Score"),
-            }
-            
-            st.dataframe(final_hist_df, width='stretch', hide_index=True, column_config=column_config)
+            final_hist_df = history_df.rename(columns={k: v for k, v in rename_map.items() if k in history_df.columns})
+            preferred = ["Month", "Quarter", "Total Score", "Change", "Revenue", "OP Margin", "Net Profit", "EPS", "Inventory", "Cash Flow"]
+            cols = [c for c in preferred if c in final_hist_df.columns]
+            cls._render_table(
+                final_hist_df[cols] if cols else final_hist_df,
+                column_config={
+                    "Total Score": st.column_config.ProgressColumn("Total Score", min_value=0, max_value=4, format="%.2f"),
+                    "Change": st.column_config.NumberColumn("Change", format="%+.2f"),
+                },
+            )
