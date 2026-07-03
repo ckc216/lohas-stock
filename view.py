@@ -24,6 +24,9 @@ class AppView:
     RED = "#d92d20"
     AMBER = "#b7791f"
 
+    # Plotly 圖表字型堆疊（含中文字型，與主 CSS 一致）
+    FONT = 'Inter, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif'
+
     @staticmethod
     def setup_page():
         st.set_page_config(page_title="股票智慧分析", layout="wide", initial_sidebar_state="collapsed")
@@ -43,7 +46,7 @@ class AppView:
             }
 
             html, body, [class*="css"], .stApp {
-                font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                font-family: Inter, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
                 color: var(--text);
                 background: #ffffff;
             }
@@ -445,7 +448,7 @@ class AppView:
             plot_bgcolor="#ffffff",
             paper_bgcolor="#ffffff",
             margin=dict(l=12, r=12, t=24, b=12),
-            font=dict(family="Inter, sans-serif", color=cls.TEXT, size=12),
+            font=dict(family=cls.FONT, color=cls.TEXT, size=12),
             hovermode="x unified",
             hoverlabel=dict(bgcolor="#ffffff", bordercolor=cls.BORDER, font_size=12, font_color=cls.TEXT),
             xaxis=dict(showgrid=False, zeroline=False, tickfont=dict(color=cls.MUTED, size=11)),
@@ -499,6 +502,43 @@ class AppView:
         return html.escape(str(value))
 
     @classmethod
+    def _add_price_marker(cls, fig, stock_data, ref_series):
+        """在最新一點標出現價圓點；低於參考線(趨勢/均線)偏綠(相對便宜)、高於偏紅(相對昂貴)。"""
+        last_x = stock_data.index[-1]
+        last_close = stock_data["close"].iloc[-1]
+        ref_last = ref_series.iloc[-1]
+        color = cls.TEXT if pd.isna(ref_last) else (cls.GREEN if last_close < ref_last else cls.RED)
+        fig.add_trace(
+            go.Scatter(
+                x=[last_x],
+                y=[last_close],
+                mode="markers",
+                name="現價",
+                marker=dict(size=11, color=color, line=dict(width=2, color="#ffffff")),
+                hovertemplate=f"現價: {last_close:.2f}<extra></extra>",
+                showlegend=False,
+            )
+        )
+
+    @classmethod
+    def _enable_legend(cls, fig):
+        """開啟頂端水平圖例，讓各條線一目了然。"""
+        fig.update_layout(
+            showlegend=True,
+            margin=dict(l=12, r=12, t=44, b=12),
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1,
+                font=dict(color=cls.MUTED, size=11),
+                bgcolor="rgba(0,0,0,0)",
+            ),
+        )
+        return fig
+
+    @classmethod
     def render_five_lines_chart(cls, stock_data, lines_data: dict):
         hover = "<b>%{fullData.name}</b>: %{y:.2f}<extra></extra>"
         fig = go.Figure()
@@ -510,6 +550,7 @@ class AppView:
                 fillcolor="rgba(0, 113, 227, 0.06)",
                 line=dict(color="rgba(0,0,0,0)"),
                 hoverinfo="skip",
+                showlegend=False,
             )
         )
         for color, name in [("#c7c7cc", "+2SD"), ("#b6b6bf", "+1SD"), ("#b6b6bf", "-1SD"), ("#c7c7cc", "-2SD")]:
@@ -540,7 +581,8 @@ class AppView:
                 hovertemplate=hover,
             )
         )
-        cls._plot(cls._chart_layout(fig))
+        cls._add_price_marker(fig, stock_data, lines_data["lines"]["Trend"])
+        cls._plot(cls._enable_legend(cls._chart_layout(fig)))
 
     @classmethod
     def render_channel_chart(cls, stock_data, channel_data: dict):
@@ -584,7 +626,8 @@ class AppView:
                 hovertemplate=hover,
             )
         )
-        cls._plot(cls._chart_layout(fig))
+        cls._add_price_marker(fig, stock_data, channel_data["lines"]["20W MA"])
+        cls._plot(cls._enable_legend(cls._chart_layout(fig)))
 
     @staticmethod
     def render_tabs(stock_data, five_lines_data: dict, channel_data: dict):
@@ -764,7 +807,7 @@ class AppView:
         fig.update_layout(
             height=390,
             paper_bgcolor="white",
-            font={"color": cls.TEXT, "family": "Inter, sans-serif"},
+            font={"color": cls.TEXT, "family": cls.FONT},
             margin=dict(l=16, r=16, t=50, b=12),
         )
         cls._plot(fig)
