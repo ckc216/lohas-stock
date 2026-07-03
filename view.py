@@ -29,7 +29,7 @@ class AppView:
 
     @staticmethod
     def setup_page():
-        st.set_page_config(page_title="股票智慧分析", layout="wide", initial_sidebar_state="collapsed")
+        st.set_page_config(page_title="股票智慧分析", page_icon="📈", layout="wide", initial_sidebar_state="collapsed")
         st.markdown(
             """
             <style>
@@ -97,6 +97,8 @@ class AppView:
             }
 
             .nav-item:hover .nav-link { background: var(--panel); color: #000 !important; }
+            .nav-link.active { background: var(--panel); color: #000 !important; }
+            .dropdown-item.active { background: var(--panel); color: #000 !important; font-weight: 700; }
             .nav-kicker {
                 width: 7px;
                 height: 7px;
@@ -170,6 +172,7 @@ class AppView:
                 border: 1px solid var(--border);
                 border-radius: 8px;
                 background: #fff;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
             }
 
             .split-header {
@@ -250,6 +253,13 @@ class AppView:
                 border: 1px solid var(--border);
                 border-radius: 8px;
                 background: #fff;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+                transition: box-shadow 0.16s ease, transform 0.16s ease;
+            }
+
+            .metric-card:hover {
+                box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+                transform: translateY(-2px);
             }
 
             .metric-card-label {
@@ -374,28 +384,42 @@ class AppView:
         )
 
     @staticmethod
-    def render_apple_nav():
+    def render_apple_nav(current_page="individual"):
+        # 目前頁面所屬的導覽分類，用來高亮標示
+        active_cat = {
+            "individual": "technical",
+            "financials_six_index": "financials",
+            "financials_overview": "financials",
+            "economy": "economy",
+        }.get(current_page, "")
+
+        def nav(cat):
+            return "nav-link active" if cat == active_cat else "nav-link"
+
+        def item(page):
+            return "dropdown-item active" if page == current_page else "dropdown-item"
+
         st.markdown(
-            """
+            f"""
             <div class="apple-nav">
                 <ul class="nav-list">
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><span class="nav-kicker"></span>技術面</a>
+                        <a class="{nav('technical')}" href="#"><span class="nav-kicker"></span>技術面</a>
                         <div class="dropdown-menu">
-                            <a href="?page=individual" target="_self" class="dropdown-item">樂活五線譜</a>
+                            <a href="?page=individual" target="_self" class="{item('individual')}">樂活五線譜</a>
                         </div>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><span class="nav-kicker"></span>財務面</a>
+                        <a class="{nav('financials')}" href="#"><span class="nav-kicker"></span>財務面</a>
                         <div class="dropdown-menu">
-                             <a href="?page=financials_six_index" target="_self" class="dropdown-item">六大指標評分</a>
-                             <a href="?page=financials_overview" target="_self" class="dropdown-item">財務總覽</a>
+                             <a href="?page=financials_six_index" target="_self" class="{item('financials_six_index')}">六大指標評分</a>
+                             <a href="?page=financials_overview" target="_self" class="{item('financials_overview')}">財務總覽</a>
                         </div>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><span class="nav-kicker"></span>總經面</a>
+                        <a class="{nav('economy')}" href="#"><span class="nav-kicker"></span>總經面</a>
                         <div class="dropdown-menu">
-                            <a href="?page=economy" target="_self" class="dropdown-item">Fear &amp; Greed Index</a>
+                            <a href="?page=economy" target="_self" class="{item('economy')}">Fear &amp; Greed Index</a>
                         </div>
                     </li>
                 </ul>

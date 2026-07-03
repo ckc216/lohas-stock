@@ -41,7 +41,7 @@ current_page = query_params.get("page", "individual")
 
 # --- UI Setup ---
 AppView.setup_page()
-AppView.render_apple_nav()
+AppView.render_apple_nav(current_page)
 
 # --- Global Header Logic ---
 if current_page not in ["economy", "financials_overview"]:
