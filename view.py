@@ -828,7 +828,6 @@ class AppView:
             fig.add_hline(y=val, line_dash="dot", line_color=cls.BORDER, annotation_text=label)
 
         fig = cls._chart_layout(fig, height=430, y_range=[0, 100])
-        fig.update_xaxes(rangeslider=dict(visible=True, thickness=0.06))
         cls._plot(fig)
 
     @classmethod
