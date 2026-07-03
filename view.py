@@ -405,9 +405,10 @@ class AppView:
         )
 
     @staticmethod
-    def render_header(subtitle="進階樂活分析工具"):
-        st.markdown('<h1 class="main-title">股票智慧分析</h1>', unsafe_allow_html=True)
-        st.markdown(f'<p class="sub-title">{html.escape(subtitle)}</p>', unsafe_allow_html=True)
+    def render_header(title="股票智慧分析", subtitle=None):
+        st.markdown(f'<h1 class="main-title">{html.escape(title)}</h1>', unsafe_allow_html=True)
+        if subtitle:
+            st.markdown(f'<p class="sub-title">{html.escape(subtitle)}</p>', unsafe_allow_html=True)
 
     @staticmethod
     def render_search_input() -> str:
@@ -652,7 +653,6 @@ class AppView:
     @classmethod
     def render_financial_overview(cls, df: pd.DataFrame):
         st.markdown('<h1 class="main-title">財務總覽</h1>', unsafe_allow_html=True)
-        st.markdown('<p class="sub-title">最新財務評分與樂活位階</p>', unsafe_allow_html=True)
 
         if df.empty:
             st.info("目前沒有財務資料。")
@@ -715,7 +715,7 @@ class AppView:
             "代號": st.column_config.TextColumn("代號", width="small"),
             "名稱": st.column_config.TextColumn("名稱", width="medium"),
             "產業": st.column_config.TextColumn("產業", width="medium"),
-            "綜合評分": st.column_config.ProgressColumn("綜合評分", min_value=0, max_value=4, format="%.2f"),
+            "綜合評分": st.column_config.NumberColumn("綜合評分", format="%.2f", width="small"),
             "樂活位階": st.column_config.TextColumn("樂活位階", width="small"),
         }
         for col_name in numeric_score_cols:
@@ -871,7 +871,6 @@ class AppView:
             <div class="score-hero">
                 <div class="score-label">綜合評分</div>
                 <div class="score-value" style="color:{score_color};">{cls._html(total_score)}</div>
-                <div class="score-note">六大指標財務品質評分</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -1009,7 +1008,7 @@ class AppView:
             cls._render_table(
                 final_hist_df[cols] if cols else final_hist_df,
                 column_config={
-                    "綜合評分": st.column_config.ProgressColumn("綜合評分", min_value=0, max_value=4, format="%.2f"),
+                    "綜合評分": st.column_config.NumberColumn("綜合評分", format="%.2f", width="small"),
                     "評分變化": st.column_config.NumberColumn("評分變化", format="%+.2f"),
                 },
             )

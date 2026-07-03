@@ -45,8 +45,8 @@ AppView.render_apple_nav()
 
 # --- Global Header Logic ---
 if current_page not in ["economy", "financials_overview"]:
-    subtitle = "六大指標分析工具" if current_page == "financials_six_index" else "進階樂活分析工具"
-    AppView.render_header(subtitle)
+    title = "六大指標評分" if current_page == "financials_six_index" else "樂活五線譜分析"
+    AppView.render_header(title)
 
 # --- Content Routing ---
 if current_page == "individual":
@@ -74,8 +74,6 @@ if current_page == "individual":
                     st.error("資料讀取失敗。")
             else:
                 AppView.render_not_found_message(target)
-    else:
-        st.markdown('<p style="text-align: center; color: #86868b; margin-top: 20px;">輸入股票代號或名稱,開始深度分析。</p>', unsafe_allow_html=True)
 
 elif current_page == "financials_overview":
     with st.spinner('載入財務總覽中…'):
@@ -149,8 +147,6 @@ elif current_page == "financials_six_index":
                     st.error(f"分析過程發生錯誤:{e}")
         else:
             AppView.render_not_found_message(target)
-    else:
-        st.markdown('<p style="text-align: center; color: #86868b; margin-top: 20px;">輸入股票代號或名稱,查看六大指標財務評分。</p>', unsafe_allow_html=True)
 
 elif current_page == "economy":
     with st.spinner('讀取市場情緒中…'):
