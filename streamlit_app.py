@@ -45,7 +45,7 @@ AppView.render_apple_nav()
 
 # --- Global Header Logic ---
 if current_page not in ["economy", "financials_overview"]:
-    subtitle = "Six-Index Analysis Tools" if current_page == "financials_six_index" else "Advanced LOHAS Analysis Tools"
+    subtitle = "六大指標分析工具" if current_page == "financials_six_index" else "進階樂活分析工具"
     AppView.render_header(subtitle)
 
 # --- Content Routing ---
@@ -53,7 +53,7 @@ if current_page == "individual":
     target = AppView.render_search_input()
 
     if target:
-        with st.spinner('Computing Analysis...'):
+        with st.spinner('分析計算中…'):
             info = get_stock_info_cached(target)
             if info:
                 sid = info['id']
@@ -71,14 +71,14 @@ if current_page == "individual":
                     AppView.render_metrics(now_p, sid, last_date)
                     AppView.render_tabs(stock_data, five_lines_data, channel_data)
                 else:
-                    st.error("Data fetch failed.")
+                    st.error("資料讀取失敗。")
             else:
                 AppView.render_not_found_message(target)
     else:
-        st.markdown('<p style="text-align: center; color: #86868b; margin-top: 20px;">Enter a stock ticker or name to begin depth analysis.</p>', unsafe_allow_html=True)
+        st.markdown('<p style="text-align: center; color: #86868b; margin-top: 20px;">輸入股票代號或名稱,開始深度分析。</p>', unsafe_allow_html=True)
 
 elif current_page == "financials_overview":
-    with st.spinner('Loading Financials Overview...'):
+    with st.spinner('載入財務總覽中…'):
         df_ov = get_financial_overview_cached()
         AppView.render_financial_overview(df_ov)
 
@@ -111,7 +111,7 @@ elif current_page == "financials_six_index":
             st.info(f"六大指標財務模型不適用於「{info.get('industry')}」，此類股票不予評分。")
         elif ticker:
             display_name = f"{stock_name} ({ticker})" if stock_name and stock_name != ticker else ticker
-            with st.spinner(f'Analyzing Financial Data for {display_name}...'):
+            with st.spinner(f'正在分析 {display_name} 的財務資料…'):
                 try:
                     # 1. Real-time Financial Analysis
                     results, raw_data = analyze_stock_detailed_cached(ticker)
@@ -144,18 +144,18 @@ elif current_page == "financials_six_index":
                             lohas_bundle
                         )
                     else:
-                        st.error(f"Could not retrieve sufficient financial data for {display_name}. Please check if the stock is listed on TWSE/TPEx.")
+                        st.error(f"無法取得 {display_name} 的足夠財務資料。請確認該股票是否為上市/上櫃股票。")
                 except Exception as e:
-                    st.error(f"An error occurred during analysis: {e}")
+                    st.error(f"分析過程發生錯誤:{e}")
         else:
             AppView.render_not_found_message(target)
     else:
-        st.markdown('<p style="text-align: center; color: #86868b; margin-top: 20px;">Enter a stock ticker or name to view Six-Index Financial Scores.</p>', unsafe_allow_html=True)
+        st.markdown('<p style="text-align: center; color: #86868b; margin-top: 20px;">輸入股票代號或名稱,查看六大指標財務評分。</p>', unsafe_allow_html=True)
 
 elif current_page == "economy":
-    with st.spinner('Fetching Market Sentiment...'):
+    with st.spinner('讀取市場情緒中…'):
         fg_data = get_fear_greed_data_cached()
         if fg_data:
             AppView.render_economy_page(fg_data)
         else:
-            st.error("Failed to fetch CNN Fear & Greed Index. Please try again later.")
+            st.error("無法取得 CNN Fear & Greed Index,請稍後再試。")

@@ -26,7 +26,7 @@ class AppView:
 
     @staticmethod
     def setup_page():
-        st.set_page_config(page_title="Stock Intelligence", layout="wide", initial_sidebar_state="collapsed")
+        st.set_page_config(page_title="股票智慧分析", layout="wide", initial_sidebar_state="collapsed")
         st.markdown(
             """
             <style>
@@ -384,22 +384,22 @@ class AppView:
             <div class="apple-nav">
                 <ul class="nav-list">
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><span class="nav-kicker"></span>Technical</a>
+                        <a class="nav-link" href="#"><span class="nav-kicker"></span>技術面</a>
                         <div class="dropdown-menu">
-                            <a href="?page=individual" target="_self" class="dropdown-item">LOHAS Five-Line</a>
+                            <a href="?page=individual" target="_self" class="dropdown-item">樂活五線譜</a>
                         </div>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><span class="nav-kicker"></span>Financials</a>
+                        <a class="nav-link" href="#"><span class="nav-kicker"></span>財務面</a>
                         <div class="dropdown-menu">
-                             <a href="?page=financials_six_index" target="_self" class="dropdown-item">Six-Index Scores</a>
-                             <a href="?page=financials_overview" target="_self" class="dropdown-item">Financials Overview</a>
+                             <a href="?page=financials_six_index" target="_self" class="dropdown-item">六大指標評分</a>
+                             <a href="?page=financials_overview" target="_self" class="dropdown-item">財務總覽</a>
                         </div>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#"><span class="nav-kicker"></span>Economy</a>
+                        <a class="nav-link" href="#"><span class="nav-kicker"></span>總經面</a>
                         <div class="dropdown-menu">
-                            <a href="?page=economy" target="_self" class="dropdown-item">Fear and Greed</a>
+                            <a href="?page=economy" target="_self" class="dropdown-item">Fear &amp; Greed Index</a>
                         </div>
                     </li>
                 </ul>
@@ -409,8 +409,8 @@ class AppView:
         )
 
     @staticmethod
-    def render_header(subtitle="Advanced LOHAS Analysis Tools"):
-        st.markdown('<h1 class="main-title">Stock Intelligence</h1>', unsafe_allow_html=True)
+    def render_header(subtitle="進階樂活分析工具"):
+        st.markdown('<h1 class="main-title">股票智慧分析</h1>', unsafe_allow_html=True)
         st.markdown(f'<p class="sub-title">{html.escape(subtitle)}</p>', unsafe_allow_html=True)
 
     @staticmethod
@@ -418,17 +418,17 @@ class AppView:
         _, col, _ = st.columns([1, 2, 1])
         with col:
             return st.text_input(
-                "Stock Search",
-                placeholder="Search company name or ticker...",
+                "股票搜尋",
+                placeholder="輸入公司名稱或股票代號…",
                 label_visibility="collapsed",
             )
 
     @staticmethod
     def render_metrics(current_price: float, ticker: str, last_date: str):
         c1, c2, c3 = st.columns(3)
-        c1.metric("Latest Price", f"{current_price:.2f} TWD")
-        c2.metric("Ticker", ticker)
-        c3.metric("Last Updated", last_date)
+        c1.metric("最新股價", f"{current_price:.2f} 元")
+        c2.metric("股票代號", ticker)
+        c3.metric("資料日期", last_date)
 
     @classmethod
     def _score_color(cls, value: Any) -> str:
@@ -533,7 +533,7 @@ class AppView:
             go.Scatter(
                 x=stock_data.index,
                 y=lines_data["lines"]["Trend"],
-                name="Trend",
+                name="趨勢線",
                 line=dict(color=cls.BLUE, width=1.4, dash="dot"),
                 hovertemplate=hover,
             )
@@ -542,7 +542,7 @@ class AppView:
             go.Scatter(
                 x=stock_data.index,
                 y=stock_data["close"],
-                name="Close",
+                name="收盤價",
                 line=dict(color=cls.TEXT, width=2.4),
                 hovertemplate=hover,
             )
@@ -557,7 +557,7 @@ class AppView:
             go.Scatter(
                 x=stock_data.index,
                 y=channel_data["lines"]["Top"],
-                name="Top",
+                name="上通道",
                 line=dict(color=cls.BLUE, width=1.4),
                 hovertemplate=hover,
             )
@@ -566,7 +566,7 @@ class AppView:
             go.Scatter(
                 x=stock_data.index,
                 y=channel_data["lines"]["Bottom"],
-                name="Bottom",
+                name="下通道",
                 fill="tonexty",
                 fillcolor="rgba(0, 113, 227, 0.06)",
                 line=dict(color=cls.BLUE, width=1.4),
@@ -577,7 +577,7 @@ class AppView:
             go.Scatter(
                 x=stock_data.index,
                 y=channel_data["lines"]["20W MA"],
-                name="20W MA",
+                name="20週均線",
                 line=dict(color="#9b9ba5", width=1.2, dash="dash"),
                 hovertemplate=hover,
             )
@@ -586,7 +586,7 @@ class AppView:
             go.Scatter(
                 x=stock_data.index,
                 y=stock_data["close"],
-                name="Close",
+                name="收盤價",
                 line=dict(color=cls.TEXT, width=2.4),
                 hovertemplate=hover,
             )
@@ -595,7 +595,7 @@ class AppView:
 
     @staticmethod
     def render_tabs(stock_data, five_lines_data: dict, channel_data: dict):
-        tab1, tab2 = st.tabs(["Lohas 5-Lines", "Lohas Channel"])
+        tab1, tab2 = st.tabs(["樂活五線譜", "樂活通道"])
         with tab1:
             AppView.render_five_lines_chart(stock_data, five_lines_data)
         with tab2:
@@ -606,8 +606,8 @@ class AppView:
         st.markdown(
             f"""
             <div class="soft-message">
-                <p class="soft-message-title">No match for "{cls._html(search_term)}"</p>
-                <p class="soft-message-copy">Check the ticker symbol or company name and try again.</p>
+                <p class="soft-message-title">找不到「{cls._html(search_term)}」</p>
+                <p class="soft-message-copy">請確認股票代號或公司名稱後再試一次。</p>
             </div>
             """,
             unsafe_allow_html=True,
@@ -615,25 +615,25 @@ class AppView:
 
     @classmethod
     def render_financial_overview(cls, df: pd.DataFrame):
-        st.markdown('<h1 class="main-title">Financials Overview</h1>', unsafe_allow_html=True)
-        st.markdown('<p class="sub-title">Latest financial scores and LOHAS levels</p>', unsafe_allow_html=True)
+        st.markdown('<h1 class="main-title">財務總覽</h1>', unsafe_allow_html=True)
+        st.markdown('<p class="sub-title">最新財務評分與樂活位階</p>', unsafe_allow_html=True)
 
         if df.empty:
-            st.info("No financial data available.")
+            st.info("目前沒有財務資料。")
             return
 
         _, col, _ = st.columns([1, 2, 1])
         with col:
             search_query = st.text_input(
-                "Search Overview",
-                placeholder="Search company name or ticker...",
+                "搜尋總覽",
+                placeholder="輸入公司名稱或股票代號…",
                 label_visibility="collapsed",
             )
 
         display_df = df.copy()
-        id_col = cls._first_existing(display_df, ["Ticker", "stock_id", "代號"])
-        name_col = cls._first_existing(display_df, ["Name", "stock_name", "名稱"])
-        level_col = cls._first_existing(display_df, ["LOHAS Level", "樂活五線譜"])
+        id_col = cls._first_existing(display_df, ["代號", "stock_id"])
+        name_col = cls._first_existing(display_df, ["名稱", "stock_name"])
+        level_col = cls._first_existing(display_df, ["樂活五線譜"])
 
         if search_query and id_col:
             mask = display_df[id_col].astype(str).str.contains(search_query, case=False, na=False)
@@ -645,48 +645,42 @@ class AppView:
             display_df[level_col] = display_df[level_col].apply(lambda x: str(int(x)) if pd.notnull(x) else "-")
 
         rename_map = {
-            "代號": "Ticker",
-            "名稱": "Name",
-            "產業": "Industry",
-            "上市日期": "Listed",
-            "財報季度": "Quarter",
-            "營收月份": "Month",
-            "總分": "Average Score",
-            "樂活五線譜": "LOHAS Level",
-            "月營收評分": "Revenue",
-            "營業利益率評分": "OP Margin",
-            "淨利成長評分": "Net Profit",
+            "總分": "綜合評分",
+            "樂活五線譜": "樂活位階",
+            "月營收評分": "月營收",
+            "營業利益率評分": "營業利益率",
+            "淨利成長評分": "淨利成長",
             "EPS評分": "EPS",
-            "存貨周轉率評分": "Inventory",
-            "自由現金流量評分": "Cash Flow",
+            "存貨周轉率評分": "存貨周轉",
+            "自由現金流量評分": "自由現金流",
         }
         display_df = display_df.rename(columns={k: v for k, v in rename_map.items() if k in display_df.columns})
 
         preferred = [
-            "Ticker",
-            "Name",
-            "Industry",
-            "Average Score",
-            "LOHAS Level",
-            "Revenue",
-            "OP Margin",
-            "Net Profit",
+            "代號",
+            "名稱",
+            "產業",
+            "綜合評分",
+            "樂活位階",
+            "月營收",
+            "營業利益率",
+            "淨利成長",
             "EPS",
-            "Inventory",
-            "Cash Flow",
-            "Quarter",
-            "Month",
+            "存貨周轉",
+            "自由現金流",
+            "財報季度",
+            "營收月份",
         ]
         cols = [c for c in preferred if c in display_df.columns] + [c for c in display_df.columns if c not in preferred]
         display_df = display_df[cols]
 
-        numeric_score_cols = ["Average Score", "Revenue", "OP Margin", "Net Profit", "EPS", "Cash Flow"]
+        numeric_score_cols = ["綜合評分", "月營收", "營業利益率", "淨利成長", "EPS", "自由現金流"]
         column_config = {
-            "Ticker": st.column_config.TextColumn("Ticker", width="small"),
-            "Name": st.column_config.TextColumn("Name", width="medium"),
-            "Industry": st.column_config.TextColumn("Industry", width="medium"),
-            "Average Score": st.column_config.ProgressColumn("Average Score", min_value=0, max_value=4, format="%.2f"),
-            "LOHAS Level": st.column_config.TextColumn("LOHAS Level", width="small"),
+            "代號": st.column_config.TextColumn("代號", width="small"),
+            "名稱": st.column_config.TextColumn("名稱", width="medium"),
+            "產業": st.column_config.TextColumn("產業", width="medium"),
+            "綜合評分": st.column_config.ProgressColumn("綜合評分", min_value=0, max_value=4, format="%.2f"),
+            "樂活位階": st.column_config.TextColumn("樂活位階", width="small"),
         }
         for col_name in numeric_score_cols:
             if col_name not in column_config:
@@ -696,25 +690,25 @@ class AppView:
 
     @classmethod
     def render_economy_page(cls, data: dict):
-        st.markdown('<h1 class="main-title">Market Sentiment</h1>', unsafe_allow_html=True)
-        st.markdown('<p class="sub-title">CNN Fear & Greed Index</p>', unsafe_allow_html=True)
+        st.markdown('<h1 class="main-title">市場情緒</h1>', unsafe_allow_html=True)
+        st.markdown('<p class="sub-title">CNN Fear &amp; Greed Index</p>', unsafe_allow_html=True)
 
-        tab1, tab2 = st.tabs(["Overview", "Timeline"])
+        tab1, tab2 = st.tabs(["總覽", "歷史走勢"])
         with tab1:
             col1, col2 = st.columns([2, 1])
             with col1:
                 cls.render_fear_greed_gauge(data["current_score"], data["current_rating"])
                 st.markdown(
-                    f'<p style="color:#86868b;font-size:12px;text-align:center;">Last updated {cls._html(data["last_updated"])}</p>',
+                    f'<p style="color:#86868b;font-size:12px;text-align:center;">資料更新於 {cls._html(data["last_updated"])}</p>',
                     unsafe_allow_html=True,
                 )
             with col2:
-                cls._section_title("Previous Readings")
+                cls._section_title("歷史數值")
                 for label, value in [
-                    ("Previous close", data["previous_close"]),
-                    ("1 week ago", data["previous_1_week"]),
-                    ("1 month ago", data["previous_1_month"]),
-                    ("1 year ago", data["previous_1_year"]),
+                    ("前一交易日", data["previous_close"]),
+                    ("一週前", data["previous_1_week"]),
+                    ("一個月前", data["previous_1_month"]),
+                    ("一年前", data["previous_1_year"]),
                 ]:
                     rating = "Neutral"
                     if value <= 25:
@@ -821,11 +815,11 @@ class AppView:
                 <h1 class="stock-title">{cls._html(display_title)}</h1>
                 <div class="meta-grid">
                     <div>
-                        <div class="meta-label">Fiscal Quarter</div>
+                        <div class="meta-label">財報季度</div>
                         <div class="meta-value">{cls._html(quarter)}</div>
                     </div>
                     <div>
-                        <div class="meta-label">Revenue Month</div>
+                        <div class="meta-label">營收月份</div>
                         <div class="meta-value">{cls._html(revenue_month)}</div>
                     </div>
                 </div>
@@ -839,21 +833,21 @@ class AppView:
         st.markdown(
             f"""
             <div class="score-hero">
-                <div class="score-label">Average Score</div>
+                <div class="score-label">綜合評分</div>
                 <div class="score-value" style="color:{score_color};">{cls._html(total_score)}</div>
-                <div class="score-note">Six-index financial quality score</div>
+                <div class="score-note">六大指標財務品質評分</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
         metrics_map = [
-            ("Revenue", ["月營收評分", "營收年增率"]),
-            ("OP Margin", ["營業利益率評分", "營業利益率"]),
-            ("Net Profit", ["淨利成長評分", "稅後淨利年增率"]),
+            ("月營收", ["月營收評分", "營收年增率"]),
+            ("營業利益率", ["營業利益率評分", "營業利益率"]),
+            ("淨利成長", ["淨利成長評分", "稅後淨利年增率"]),
             ("EPS", ["EPS評分", "每股盈餘EPS"]),
-            ("Inventory", ["存貨周轉率評分", "存貨周轉率"]),
-            ("Cash Flow", ["自由現金流量評分", "自由現金流量"]),
+            ("存貨周轉", ["存貨周轉率評分", "存貨周轉率"]),
+            ("自由現金流", ["自由現金流量評分", "自由現金流量"]),
         ]
         cols = st.columns(3)
         for idx, (label, keys) in enumerate(metrics_map):
@@ -865,7 +859,7 @@ class AppView:
                     <div class="metric-card">
                         <div class="metric-card-label">{label}</div>
                         <div class="metric-card-value" style="color:{color};">{cls._html(val)}</div>
-                        <div class="metric-card-scale">Score out of 4</div>
+                        <div class="metric-card-scale">滿分 4 分</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -874,7 +868,7 @@ class AppView:
                 cols = st.columns(3)
 
         st.markdown('<div style="height:28px;"></div>', unsafe_allow_html=True)
-        tabs = st.tabs(["Monthly Revenue", "Operating Margin", "Net Profit Growth", "EPS", "Inventory Turnover", "Free Cash Flow"])
+        tabs = st.tabs(["月營收", "營業利益率", "淨利成長率", "EPS", "存貨周轉率", "自由現金流量"])
 
         def render_df(df: pd.DataFrame | None, candidates: list[list[str]], names: list[str], empty_msg: str):
             if df is None or df.empty:
@@ -886,62 +880,62 @@ class AppView:
                 return
             table = df[selected].copy()
             table.columns = names
-            config = {name: st.column_config.NumberColumn(name, format="%.2f") for name in names if name not in ["Month", "Quarter"]}
+            config = {name: st.column_config.NumberColumn(name, format="%.2f") for name in names if name not in ["月份", "季度"]}
             cls._render_table(table, column_config=config)
 
         with tabs[0]:
             render_df(
                 raw_data.get("revenue"),
                 [["date"], ["revenue"], ["yoy"]],
-                ["Month", "Revenue (Thousand TWD)", "YoY (%)"],
-                "No revenue data available.",
+                ["月份", "營收(千元)", "年增率(%)"],
+                "查無營收資料。",
             )
         with tabs[1]:
             render_df(
                 raw_data.get("profitability"),
                 [["quarter"], ["營業利益率"]],
-                ["Quarter", "Operating Margin (%)"],
-                "No operating margin data available.",
+                ["季度", "營業利益率(%)"],
+                "查無營業利益率資料。",
             )
         with tabs[2]:
             render_df(
                 raw_data.get("profitability"),
                 [["quarter"], ["稅後淨利成長率", "稅後淨利年增率"]],
-                ["Quarter", "Net Profit Growth (%)"],
-                "No net profit growth data available.",
+                ["季度", "淨利成長率(%)"],
+                "查無淨利成長資料。",
             )
         with tabs[3]:
             render_df(
                 raw_data.get("profitability"),
                 [["quarter"], ["每股盈餘", "每股盈餘EPS"]],
-                ["Quarter", "EPS (TWD)"],
-                "No EPS data available.",
+                ["季度", "EPS(元)"],
+                "查無 EPS 資料。",
             )
         with tabs[4]:
             render_df(
                 raw_data.get("profitability"),
                 [["quarter"], ["存貨週轉率(次)", "存貨周轉率"]],
-                ["Quarter", "Inventory Turnover"],
-                "No inventory turnover data available.",
+                ["季度", "存貨周轉率"],
+                "查無存貨周轉率資料。",
             )
         with tabs[5]:
             render_df(
                 raw_data.get("cashflow"),
                 [["quarter"], ["fcf"]],
-                ["Quarter", "Free Cash Flow"],
-                "No cash flow data available.",
+                ["季度", "自由現金流量"],
+                "查無現金流量資料。",
             )
 
         if lohas_bundle:
-            cls._section_title("LOHAS Technical Analysis")
-            l_tab1, l_tab2 = st.tabs(["Lohas 5-Lines", "Lohas Channel"])
+            cls._section_title("樂活技術分析")
+            l_tab1, l_tab2 = st.tabs(["樂活五線譜", "樂活通道"])
             with l_tab1:
                 cls.render_five_lines_chart(lohas_bundle["stock_data"], lohas_bundle["five_lines_data"])
             with l_tab2:
                 cls.render_channel_chart(lohas_bundle["stock_data"], lohas_bundle["channel_data"])
 
         if history_df is not None and not history_df.empty:
-            cls._section_title("Historical Performance")
+            cls._section_title("歷史評分走勢")
             month_col = cls._first_existing(history_df, ["營收月份", "Month"])
             score_col = cls._first_existing(history_df, ["本期綜合評分", "總分", "Total Score"])
             if month_col and score_col:
@@ -952,10 +946,10 @@ class AppView:
                         x=hist_plot[month_col],
                         y=hist_plot[score_col],
                         mode="lines+markers",
-                        name="Total Score",
+                        name="綜合評分",
                         line=dict(color=cls.BLUE, width=2.6),
                         marker=dict(size=7, color="#ffffff", line=dict(width=2, color=cls.BLUE)),
-                        hovertemplate="Score: %{y:.2f}<extra></extra>",
+                        hovertemplate="評分: %{y:.2f}<extra></extra>",
                     )
                 )
                 fig = cls._chart_layout(fig, height=360, y_range=[0, 4.2])
@@ -963,24 +957,24 @@ class AppView:
                 cls._plot(fig)
 
             rename_map = {
-                "營收月份": "Month",
-                "財報季度": "Quarter",
-                "本期綜合評分": "Total Score",
-                "綜合評分變化": "Change",
-                "營收年增率": "Revenue",
-                "營業利益率": "OP Margin",
-                "稅後淨利年增率": "Net Profit",
+                "營收月份": "營收月份",
+                "財報季度": "財報季度",
+                "本期綜合評分": "綜合評分",
+                "綜合評分變化": "評分變化",
+                "營收年增率": "月營收",
+                "營業利益率": "營業利益率",
+                "稅後淨利年增率": "淨利成長",
                 "每股盈餘EPS": "EPS",
-                "存貨周轉率": "Inventory",
-                "自由現金流量": "Cash Flow",
+                "存貨周轉率": "存貨周轉",
+                "自由現金流量": "自由現金流",
             }
             final_hist_df = history_df.rename(columns={k: v for k, v in rename_map.items() if k in history_df.columns})
-            preferred = ["Month", "Quarter", "Total Score", "Change", "Revenue", "OP Margin", "Net Profit", "EPS", "Inventory", "Cash Flow"]
+            preferred = ["營收月份", "財報季度", "綜合評分", "評分變化", "月營收", "營業利益率", "淨利成長", "EPS", "存貨周轉", "自由現金流"]
             cols = [c for c in preferred if c in final_hist_df.columns]
             cls._render_table(
                 final_hist_df[cols] if cols else final_hist_df,
                 column_config={
-                    "Total Score": st.column_config.ProgressColumn("Total Score", min_value=0, max_value=4, format="%.2f"),
-                    "Change": st.column_config.NumberColumn("Change", format="%+.2f"),
+                    "綜合評分": st.column_config.ProgressColumn("綜合評分", min_value=0, max_value=4, format="%.2f"),
+                    "評分變化": st.column_config.NumberColumn("評分變化", format="%+.2f"),
                 },
             )
