@@ -26,6 +26,10 @@ def fetch_data_cached(ticker: str, market: str = None):
 def get_financial_overview_cached():
     return sqlite_handler.get_financial_overview()
 
+@st.cache_data(ttl=3600)
+def analyze_stock_detailed_cached(ticker: str):
+    return financial_scorer.analyze_stock_detailed(ticker)
+
 @st.cache_data(ttl=600)
 def get_fear_greed_data_cached():
     return EconomyService.fetch_fear_greed_index()
@@ -108,7 +112,7 @@ elif current_page == "financials_six_index":
             with st.spinner(f'Analyzing Financial Data for {display_name}...'):
                 try:
                     # 1. Real-time Financial Analysis
-                    results, raw_data = financial_scorer.analyze_stock_detailed(ticker)
+                    results, raw_data = analyze_stock_detailed_cached(ticker)
                     
                     # 2. Historical Data from DB
                     history_df = sqlite_handler.get_financial_history(ticker)

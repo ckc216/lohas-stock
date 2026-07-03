@@ -6,12 +6,16 @@ import random
 import numpy as np
 import urllib3
 import os
+import logging
 from datetime import datetime, timedelta
 from tqdm import tqdm
 from services import SQLiteHandler, DB_PATH
 
 # 關閉 SSL 警告訊息
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# logging.basicConfig 已由 services 於 import 時設定
+logger = logging.getLogger(__name__)
 
 class StockScraper:
     """負責抓取並解析富邦證券的財報數據。"""
@@ -32,7 +36,8 @@ class StockScraper:
                     soup = BeautifulSoup(response.text, 'html.parser')
                     self._soup_cache[url] = soup
                     return soup
-            except: pass
+            except Exception as e:
+                logger.debug(f"Fetch failed ({url}, attempt {i+1}): {e}")
             time.sleep(1)
         return None
 
@@ -50,7 +55,7 @@ class StockScraper:
                     for c in cells[1:]:
                         txt = c.get_text(strip=True).replace(',', '').replace('%', '')
                         try: vals.append(float(txt))
-                        except: vals.append(np.nan)
+                        except Exception: vals.append(np.nan)
                     results[name] = vals
         return results
 
@@ -86,7 +91,7 @@ class StockScraper:
         headers = [td.get_text(strip=True) for td in header_tr.find_all('td')]
         try:
             idx_date, idx_rev, idx_yoy = headers.index('年/月'), headers.index('營收'), headers.index('年增率')
-        except: return pd.DataFrame()
+        except Exception: return pd.DataFrame()
         data = []
         for tr in header_tr.find_next_siblings('tr'):
             cols = tr.find_all('td')
@@ -96,7 +101,7 @@ class StockScraper:
                     try:
                         y, m = map(int, d_str.split('/'))
                         data.append({'date': f"{y+1911}-{m:02d}", 'year': y+1911, 'month': m, 'revenue': float(rev_str or 0), 'yoy': float(yoy_str or 0)})
-                    except: continue
+                    except Exception: continue
         return pd.DataFrame(data)
 
     def get_cashflow_data(self, stock_id):
@@ -157,7 +162,7 @@ class FinancialScorer:
                     y, q = q_str.split('.')
                     results['財報季度'] = f"{int(y)+1911 if int(y)<1000 else y}.{q}"
                 else: results['財報季度'] = q_str
-            except: results['財報季度'] = q_str
+            except Exception: results['財報季度'] = q_str
         else: results['財報季度'] = None
 
         # Scores
@@ -203,7 +208,7 @@ class FinancialScorer:
                     if needed == 0: break
                     if r['year'] == latest['year'] and r['month'] >= 1: continue
                     yoy_series.append(r['yoy']); needed -= 1
-            except: return 0
+            except Exception: return 0
         else: yoy_series = df['yoy'].head(6).tolist()
         if len(yoy_series) < 6: return 0
         m0, m1, m2 = yoy_series[0], yoy_series[1], yoy_series[2]
@@ -314,7 +319,9 @@ def run_bulk_financial_analysis(market_filter='ALL'):
             
             if len(results) >= 20:
                 handler.save_financial_scores(results); results = []
-        except: continue
+        except Exception as e:
+            logger.warning(f"Skipped {sid} {sname}: {e}")
+            continue
     if results: handler.save_financial_scores(results)
 
 if __name__ == "__main__":
