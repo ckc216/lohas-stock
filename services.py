@@ -16,6 +16,9 @@ import logging
 # 設定資料庫統一路徑
 DB_PATH = os.path.join('data', 'financial_scores.db')
 
+# 六大指標模型不適用的產業（會計結構不同，跳過評分）
+EXCLUDED_INDUSTRIES = {'金融保險業'}
+
 # 設定日誌
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -48,11 +51,12 @@ class YFinanceService:
             if not match.empty:
                 return {
                     'id': match.iloc[0]['代號'],
-                    'market': match.iloc[0]['market']
+                    'market': match.iloc[0]['market'],
+                    'industry': match.iloc[0].get('industry')
                 }
-        
+
         if target.isdigit():
-            return {'id': target, 'market': None}
+            return {'id': target, 'market': None, 'industry': None}
         return None
     
     def fetch_data(self, ticker: str, market: str = None) -> pd.DataFrame | None:
@@ -246,7 +250,12 @@ class SQLiteHandler:
         conn = sqlite3.connect(self.db_path)
         try:
             cursor = conn.cursor()
-            sql = "REPLACE INTO stock_price_trend_lines VALUES (?,?,?,?,?,?,?,?,?,?)"
+            sql = """
+            REPLACE INTO stock_price_trend_lines (
+                stock_id, date, stock_name, level, close_price,
+                upper_2sd, upper_1sd, trend_line, lower_1sd, lower_2sd
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """
             cursor.executemany(sql, data_list)
             conn.commit()
         except sqlite3.Error as e:

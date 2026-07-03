@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
-from services import YFinanceService, LohasService, EconomyService, SQLiteHandler
+from services import YFinanceService, LohasService, EconomyService, SQLiteHandler, EXCLUDED_INDUSTRIES
 from view import AppView
 from financial_scraper import FinancialScorer
 
@@ -107,7 +107,9 @@ elif current_page == "financials_six_index":
              ticker = target
              stock_name = target
 
-        if ticker:
+        if ticker and info and info.get('industry') in EXCLUDED_INDUSTRIES:
+            st.info(f"六大指標財務模型不適用於「{info.get('industry')}」，此類股票不予評分。")
+        elif ticker:
             display_name = f"{stock_name} ({ticker})" if stock_name and stock_name != ticker else ticker
             with st.spinner(f'Analyzing Financial Data for {display_name}...'):
                 try:

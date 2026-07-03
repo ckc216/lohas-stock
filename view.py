@@ -853,7 +853,7 @@ class AppView:
             ("Net Profit", ["淨利成長評分", "稅後淨利年增率"]),
             ("EPS", ["EPS評分", "每股盈餘EPS"]),
             ("Inventory", ["存貨周轉率評分", "存貨周轉率"]),
-            ("Cash Flow", ["自由現金流評分", "自由現金流量"]),
+            ("Cash Flow", ["自由現金流量評分", "自由現金流量"]),
         ]
         cols = st.columns(3)
         for idx, (label, keys) in enumerate(metrics_map):

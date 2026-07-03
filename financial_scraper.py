@@ -9,7 +9,7 @@ import os
 import logging
 from datetime import datetime, timedelta
 from tqdm import tqdm
-from services import SQLiteHandler, DB_PATH
+from services import SQLiteHandler, DB_PATH, EXCLUDED_INDUSTRIES
 
 # 關閉 SSL 警告訊息
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -174,10 +174,10 @@ class FinancialScorer:
             results['EPS評分'] = self.score_eps(df_zcr['每股盈餘'].tolist())
             results['存貨周轉率評分'] = self.score_inventory(df_zcr['存貨週轉率(次)'].tolist(), inv_check)
 
-        results['自由現金流評分'] = self.score_fcf(df_cf['fcf'].tolist() if not df_cf.empty else [])
+        results['自由現金流量評分'] = self.score_fcf(df_cf['fcf'].tolist() if not df_cf.empty else [])
 
         # Total
-        keys = ['月營收評分', '營業利益率評分', '淨利成長評分', 'EPS評分', '存貨周轉率評分', '自由現金流評分']
+        keys = ['月營收評分', '營業利益率評分', '淨利成長評分', 'EPS評分', '存貨周轉率評分', '自由現金流量評分']
         raw_scores = [results.get(k) for k in keys]
         if any(s == "無法評分" for s in raw_scores): results['總分'] = "無法評分"
         else:
@@ -283,11 +283,11 @@ def run_bulk_financial_analysis(market_filter='ALL'):
     results = []
     for _, row in tqdm(df.iterrows(), total=len(df), desc="Financial Scoring"):
         sid, sname, ldate, ind = row['代號'], row['名稱'], row['list_date'], row['industry']
-        if ind == '金融保險業': continue
+        if ind in EXCLUDED_INDUSTRIES: continue
         time.sleep(random.uniform(0.1, 0.3))
         try:
             analysis = scorer.analyze_stock(sid)
-            keys = ['月營收評分', '營業利益率評分', '淨利成長評分', 'EPS評分', '存貨周轉率評分', '自由現金流評分']
+            keys = ['月營收評分', '營業利益率評分', '淨利成長評分', 'EPS評分', '存貨周轉率評分', '自由現金流量評分']
             if any(analysis.get(k) == "無法評分" for k in keys) or not analysis.get('營收月份'): continue
             
             score_diff = None
@@ -314,7 +314,7 @@ def run_bulk_financial_analysis(market_filter='ALL'):
 
             results.append((sid, sname, ldate, ind, analysis.get('財報季度'), analysis.get('營收月份'), 
                             analysis.get('月營收評分'), analysis.get('營業利益率評分'), analysis.get('淨利成長評分'), 
-                            analysis.get('EPS評分'), analysis.get('存貨周轉率評分'), analysis.get('自由現金流評分'), 
+                            analysis.get('EPS評分'), analysis.get('存貨周轉率評分'), analysis.get('自由現金流量評分'), 
                             current_score, score_diff))
             
             if len(results) >= 20:
