@@ -263,13 +263,6 @@ class AppView:
                 line-height: 1;
             }
 
-            .metric-card-scale {
-                margin-top: 6px;
-                color: var(--subtle);
-                font-size: 12px;
-                font-weight: 500;
-            }
-
             [data-testid="stMetric"] {
                 padding: 18px;
                 border: 1px solid var(--border);
@@ -859,7 +852,6 @@ class AppView:
                     <div class="metric-card">
                         <div class="metric-card-label">{label}</div>
                         <div class="metric-card-value" style="color:{color};">{cls._html(val)}</div>
-                        <div class="metric-card-scale">滿分 4 分</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
